@@ -72,9 +72,6 @@ GID_TRANS_ROT = 1 << 29
 GID_MASK = GID_TRANS_FLIPX | GID_TRANS_FLIPY | GID_TRANS_ROT
 
 # error message format strings go here
-duplicate_name_fmt = (
-    'Cannot set user {} property on {} "{}"; Tiled property already exists.'
-)
 
 flag_names = ("flipped_horizontally", "flipped_vertically", "flipped_diagonally")
 
@@ -412,14 +409,14 @@ class TiledElement:
                 _hasattr = hasattr(self, k.encode("utf-8"))
 
             if _hasattr:
-                msg = duplicate_name_fmt.format(k, self.__class__.__name__, self.name)
+                msg = f"Cannot set user {k} property on {self.__class__.__name__} \"{self.name}\"; Tiled property already exists."
                 logger.error(msg)
                 return True
         return False
 
     @staticmethod
     def _log_property_error_message() -> None:
-        msg = "Some name are reserved for {0} objects and cannot be used."
+        msg = "Some names are reserved for {0} objects and cannot be used."
         logger.error(msg)
 
     def _set_properties(self, node: ElementTree.Element, customs=None) -> None:
