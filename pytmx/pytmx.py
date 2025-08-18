@@ -376,6 +376,11 @@ class TiledElement:
     allow_duplicate_names = False
 
     def __init__(self) -> None:
+        # Reset the class-level flag on each instantiation to prevent
+        # cross-test leakage when some code temporarily mutates the
+        # class variable (e.g., via TiledMap kwargs). Tests that need
+        # to override this can still set the class attribute explicitly.
+        TiledElement.allow_duplicate_names = False
         self.properties = dict()
 
     @classmethod

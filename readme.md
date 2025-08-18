@@ -1,13 +1,28 @@
 <div align="center">
 
-# pytmx
+# pytmx-ng
+![pypi version](https://img.shields.io/pypi/v/pytmx-ng)
+![license](https://img.shields.io/github/license/pnearing/pytmx-ng)
+![pypi downloads](https://img.shields.io/pypi/dm/pytmx-ng)
+
+## Fork of pytmx
+
+### 
+I forked pytmx and rereleased it as pytmx-ng, because the original author doesn't update it anymore.
+I've added a few features like points for rectangles, fixed rotated coordinates, and expanded the
+objects to support more object types.  I've kept the original license and authorship, but I've added
+my own name as the maintainer.  I've also kept the import name as pytmx, so this can be used as a 
+drop-in replacement for pytmx.
+
+
+
+
+
+Original Documentation, with a few edits:
+==============================================================================
 
 A map loader for Python/pygame, designed for video games
 
-![pypi version](https://img.shields.io/pypi/v/pytmx)
-![license](https://img.shields.io/github/license/bitcraft/pytmx)
-![code style](https://img.shields.io/badge/code%20style-black-000000.svg)
-![pypi downloads](https://img.shields.io/pypi/dm/pytmx)
 
 </div>
 
@@ -40,11 +55,11 @@ with good results.
 not take python 2.7 support into consideration and any breaking changes will not be 
 fixed.
 
-If you have any problems or suggestions, please open an issue or join the Discord server.
+<!-- If you have any problems or suggestions, please open an issue or join the Discord server.
 https://discord.gg/2taTP4aYR6
 
 If you find this useful, please consider making a donation to help support it.
-https://liberapay.com/ltheden/donate
+https://liberapay.com/ltheden/donate -->
 
 *Released under the LGPL V3*
 
@@ -53,6 +68,7 @@ News
 
 | Date     | Changes
 | -------- | --------
+| 08/18/25 | Forked from pytmx. Added expanded objects, points for rectangles, and fixed rotated co-ordinates.
 | 06/13/23 | Fix flipped tile objects.
 | 09/21/21 | Supports pygame._sdl2.
 | 09/08/21 | Much faster loading, especially for large maps.
@@ -134,7 +150,7 @@ Installation
 
 Install from pip
 
-    pip install pytmx
+    pip install pytmx-ng
 
 
 Manually install it
