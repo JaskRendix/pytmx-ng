@@ -209,7 +209,7 @@ def convert_to_bool(value: Optional[Union[str, int, float]] = None) -> bool:
             return False
     else:
         return False
-    raise ValueError('cannot parse "{}" as bool'.format(value))
+    raise ValueError(f'cannot parse "{value}" as bool')
 
 
 def resolve_to_class(value: str, custom_types: dict) -> TiledClassType:
@@ -351,11 +351,8 @@ def parse_properties(node: ElementTree.Element, customs: dict = None) -> dict:
                 if "type" in subnode.keys():
                     cls = prop_type[subnode.get("type")]
             except AttributeError:
-                logger.info(
-                    "Type {} Not a built-in type. Defaulting to string-cast.".format(
-                        subnode.get("type")
-                    )
-                )
+                logger.info(f"Type {subnode.get('type')} Not a built-in type. Defaulting to string-cast.")
+            
             if "class" == subnode.get("type"):
                 new = resolve_to_class(subnode.get("propertytype"), customs)
                 properties = parse_properties(subnode, customs)
@@ -450,17 +447,15 @@ class TiledElement:
             return self.properties[item]
         except KeyError:
             if self.properties.get("name", None):
-                raise AttributeError(
-                    "Element '{0}' has no property {1}".format(self.name, item)
-                )
+                raise AttributeError(f"Element '{self.name}' has no property {item}")
             else:
-                raise AttributeError("Element has no property {0}".format(item))
+                raise AttributeError(f"Element has no property {item}")
 
     def __repr__(self):
         if hasattr(self, "id"):
-            return '<{}[{}]: "{}">'.format(self.__class__.__name__, self.id, self.name)
+            return f'<{self.__class__.__name__}[{self.id}]: "{self.name}">'
         else:
-            return '<{}: "{}">'.format(self.__class__.__name__, self.name)
+            return f'<{self.__class__.__name__}: "{self.name}">'
 
 
 class TiledClassType:
@@ -558,7 +553,7 @@ class TiledMap(TiledElement):
             self.parse_xml(ElementTree.parse(self.filename).getroot())
 
     def __repr__(self):
-        return '<{0}: "{1}">'.format(self.__class__.__name__, self.filename)
+        return f'<{self.__class__.__name__}: "{self.filename}">'
 
     # iterate over layers and objects in map
     def __iter__(self):
@@ -763,9 +758,7 @@ class TiledMap(TiledElement):
 
         """
         if not (x >= 0 and y >= 0):
-            raise ValueError(
-                "Tile coordinates must be non-negative, were ({0}, {1})".format(x, y)
-            )
+            raise ValueError(f"Tile coordinates must be non-negative, were ({x}, {y})")
 
         try:
             layer = self.layers[layer]
@@ -804,13 +797,13 @@ class TiledMap(TiledElement):
             assert int(gid) >= 0
             return self.images[gid]
         except TypeError:
-            msg = "GIDs must be expressed as a number.  Got: {0}"
-            logger.debug(msg.format(gid))
-            raise TypeError(msg.format(gid))
+            msg = f"GIDs must be expressed as a number.  Got: {gid}"
+            logger.debug(msg)
+            raise TypeError(msg)
         except (AssertionError, IndexError):
-            msg = "Coords: ({0},{1}) in layer {2} has invalid GID: {3}"
-            logger.debug(msg.format(gid))
-            raise ValueError(msg.format(gid))
+            msg = f"Coords: ({x},{y}) in layer {layer} has invalid GID: {gid}"
+            logger.debug(msg)
+            raise ValueError(msg)
 
     def get_tile_gid(self, x: int, y: int, layer: int) -> int:
         """Return the tile image GID for this location.
@@ -828,18 +821,14 @@ class TiledMap(TiledElement):
 
         """
         if not (x >= 0 and y >= 0 and layer >= 0):
-            raise ValueError(
-                "Tile coordinates and layers must be non-negative, were ({0}, {1}), layer={2}".format(
-                    x, y, layer
-                )
-            )
+            raise ValueError(f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={layer}")
 
         try:
             return self.layers[int(layer)].data[int(y)][int(x)]
         except (IndexError, ValueError):
-            msg = "Coords: ({0},{1}) in layer {2} is invalid"
-            logger.debug(msg.format(x, y, layer))
-            raise ValueError(msg.format(x, y, layer))
+            msg = f"Coords: ({x},{y}) in layer {layer} is invalid"
+            logger.debug(msg)
+            raise ValueError(msg)
 
     def get_tile_properties(self, x: int, y: int, layer: int) -> Optional[dict]:
         """Return the tile image GID for this location.
@@ -857,26 +846,22 @@ class TiledMap(TiledElement):
 
         """
         if not (x >= 0 and y >= 0 and layer >= 0):
-            raise ValueError(
-                "Tile coordinates and layers must be non-negative, were ({0}, {1}), layer={2}".format(
-                    x, y, layer
-                )
-            )
+            raise ValueError(f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={layer}")
 
         try:
             gid = self.layers[int(layer)].data[int(y)][int(x)]
         except (IndexError, ValueError):
-            msg = "Coords: ({0},{1}) in layer {2} is invalid."
-            logger.debug(msg.format(x, y, layer))
-            raise Exception(msg.format(x, y, layer))
+            msg = f"Coords: ({x},{y}) in layer {layer} is invalid."
+            logger.debug(msg)
+            raise Exception(msg)
 
         else:
             try:
                 return self.tile_properties[gid]
             except (IndexError, ValueError):
-                msg = "Coords: ({0},{1}) in layer {2} has invalid GID: {3}"
-                logger.debug(msg.format(x, y, layer, gid))
-                raise Exception(msg.format(x, y, layer, gid))
+                msg = f"Coords: ({x},{y}) in layer {layer} has invalid GID: {gid}"
+                logger.debug(msg)
+                raise Exception(msg)
             except KeyError:
                 return None
 
@@ -935,9 +920,9 @@ class TiledMap(TiledElement):
             assert int(layer) >= 0
             layer = int(layer)
         except (TypeError, AssertionError):
-            msg = "Layer must be a positive integer.  Got {0} instead."
-            logger.debug(msg.format(type(layer)))
-            raise ValueError
+            msg = f"Layer must be a positive integer.  Got {type(layer)} instead."
+            logger.debug(msg)
+            raise ValueError(msg)
 
         p = product(range(self.width), range(self.height))
         layergids = set(self.layers[layer].data[y][x] for x, y in p)
@@ -986,9 +971,9 @@ class TiledMap(TiledElement):
         try:
             return self.layernames[name]
         except KeyError:
-            msg = 'Layer "{0}" not found.'
-            logger.debug(msg.format(name))
-            raise ValueError(msg.format(name))
+            msg = f'Layer "{name}" not found.'
+            logger.debug(msg)
+            raise ValueError(msg)
 
     def get_object_by_id(self, obj_id: int) -> TiledObject:
         """Find an object by the object id.
@@ -1271,22 +1256,18 @@ class TiledTileset(TiledElement):
                 path = os.path.abspath(os.path.join(dirname, source))
                 if not os.path.exists(path):
                     # raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), path)
-                    raise Exception(
-                        "Cannot find tileset file {0} from {1}, should be at {2}".format(
-                            source, self.parent.filename, path
-                        )
-                    )
+                    raise Exception(f"Cannot find tileset file {source} from {self.parent.filename}, should be at {path}")
 
                 try:
                     node = ElementTree.parse(path).getroot()
                 except IOError as io:
-                    msg = "Error loading external tileset: {0}"
-                    logger.error(msg.format(path))
-                    raise Exception(msg.format(path)) from io
+                    msg = f"Error loading external tileset: {path}"
+                    logger.error(msg)
+                    raise Exception(msg) from io
             else:
-                msg = "Found external tileset, but cannot handle type: {0}"
-                logger.error(msg.format(self.source))
-                raise Exception(msg.format(self.source))
+                msg = f"Found external tileset, but cannot handle type: {self.source}"
+                logger.error(msg)
+                raise Exception(msg)
 
         self._set_properties(node)
 
@@ -1465,9 +1446,7 @@ class TiledTileLayer(TiledElement):
 
         child = data_node.find("tile")
         if child is not None:
-            raise ValueError(
-                "XML tile elements are no longer supported. Must use base64 or csv map formats."
-            )
+            raise ValueError("XML tile elements are no longer supported. Must use base64 or csv map formats.")
 
         temp = [
             self.parent.register_gid_check_flags(gid)
@@ -1510,6 +1489,9 @@ class TiledObjectGroup(TiledElement, list):
 
         Args:
             node (ElementTree.Element): Node to parse.
+
+        Returns:
+            TiledObjectGroup: The parsed object group.
 
         """
         self._set_properties(node, self.custom_types)
