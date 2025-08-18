@@ -15,6 +15,9 @@ my own name as the maintainer.  I've also kept the import name as pytmx, so this
 drop-in replacement for pytmx.
 
 
+I'm going to be removing the support for python 2.7, to make it easier to maintain the code.
+If you need to use python 2.7, you can use the py27-legacy branch.
+
 
 
 

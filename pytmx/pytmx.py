@@ -1524,7 +1524,7 @@ class TiledObjectGroup(TiledElement, list):
 class TiledObject(TiledElement):
     """Represents any Tiled Object.
 
-    Supported types: Box, Ellipse, Tile Object, Polyline, Polygon.
+    Supported types: Box, Ellipse, Tile Object, Polyline, Polygon, Text, Point.
 
     """
 
@@ -1573,7 +1573,7 @@ class TiledObject(TiledElement):
 
         """
 
-        def read_points(text):
+        def read_points(text) -> tuple[tuple[float, float]]:
             """
             Parse a text string of float tuples and return [(x,...),...]
 
