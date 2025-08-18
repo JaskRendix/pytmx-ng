@@ -1,5 +1,5 @@
 """
-Copyright (C) 2012-2024, Leif Theden <leif.theden@gmail.com>
+Copyright (C) 2012-2025, Leif Theden <leif.theden@gmail.com>
 
 This file is part of pytmx.
 
