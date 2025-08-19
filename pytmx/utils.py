@@ -39,7 +39,6 @@ from .constants import (
     GID_TRANS_ROT,
     Point,
     TileFlags,
-    empty_flags,
 )
 
 
@@ -61,7 +60,7 @@ def default_image_loader(filename: str, flags, **kwargs):
 def decode_gid(raw_gid: int) -> tuple[int, TileFlags]:
     """Decode a GID from TMX data into a base GID and its transform flags."""
     if raw_gid < GID_TRANS_ROT:
-        return raw_gid, empty_flags
+        return raw_gid, TileFlags(False, False, False)
     return (
         raw_gid & ~GID_MASK,
         TileFlags(

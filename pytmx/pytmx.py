@@ -18,7 +18,6 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 
-# from __future__ import annotations
 
 from .constants import TileFlags
 from .properties import parse_properties
