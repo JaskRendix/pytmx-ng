@@ -112,7 +112,7 @@ def smart_convert(
     return tile
 
 
-def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], **kwargs):
+def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], pixelalpha: bool=True, **kwargs):
     """
     pytmx image loader for pygame
 
@@ -125,9 +125,8 @@ def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], **kwargs):
 
     """
     if colorkey:
-        colorkey = pygame.Color("#{0}".format(colorkey))
+        colorkey = pygame.Color(f"#{colorkey}")
 
-    pixelalpha = kwargs.get("pixelalpha", True)
     image = pygame.image.load(filename)
 
     def load_image(rect=None, flags=None):
