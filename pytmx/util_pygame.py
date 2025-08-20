@@ -19,7 +19,8 @@ License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
 import itertools
 import logging
-from typing import Optional, Union
+from collections.abc import Callable
+from typing import Any, Optional, Union
 
 from .constants import TileFlags, ColorLike, PointLike
 from .map import TiledMap
@@ -36,6 +37,7 @@ except ImportError:
 __all__ = ["load_pygame", "pygame_image_loader", "simplify", "build_rects"]
 
 
+
 def handle_transformation(tile: pygame.Surface, flags: TileFlags) -> pygame.Surface:
     """
     Transform tile according to the flags and return a new one
@@ -46,66 +48,113 @@ def handle_transformation(tile: pygame.Surface, flags: TileFlags) -> pygame.Surf
 
     Returns:
         new tile surface
-
     """
     if flags.flipped_diagonally:
+        if tile.get_width() != tile.get_height():
+            raise ValueError(
+                f"Cannot flip tile {tile.get_size()} diagonally if it is not a square"
+            )
         tile = flip(rotate(tile, 270), True, False)
     if flags.flipped_horizontally or flags.flipped_vertically:
         tile = flip(tile, flags.flipped_horizontally, flags.flipped_vertically)
     return tile
 
 
-def smart_convert(original: pygame.Surface, colorkey: Optional[ColorLike], pixelalpha: bool) -> pygame.Surface:
+def count_colorkey_pixels(surface: pygame.Surface, colorkey: ColorLike) -> int:
+    """Efficiently count pixels matching the colorkey."""
+    try:
+        import pygame.surfarray
+
+        pixel_array = pygame.surfarray.pixels3d(surface)
+        r, g, b = colorkey[:3]
+        return (
+            (pixel_array[:, :, 0] == r)
+            & (pixel_array[:, :, 1] == g)
+            & (pixel_array[:, :, 2] == b)
+        ).sum()
+    except ImportError:
+        # Slow fallback method
+        width, height = surface.get_size()
+        return sum(
+            1
+            for x in range(width)
+            for y in range(height)
+            if surface.get_at((x, y))[:3] == colorkey[:3]
+        )
+
+
+def has_transparency(surface: pygame.Surface, threshold: int = 254) -> bool:
+    """Detects transparency via mask."""
+    try:
+        mask = pygame.mask.from_surface(surface, threshold)
+        return mask.count() < surface.get_width() * surface.get_height()
+    except Exception:
+        return True  # Assume transparency if mask fails
+
+
+def log_surface_properties(surface: pygame.Surface, label: str = "Surface") -> None:
+    """Print diagnostic info (optional for debugging)."""
+    size = surface.get_size()
+    flags = surface.get_flags()
+    bitsize = surface.get_bitsize()
+    alpha = surface.get_alpha()
+    logger.info(
+        f"[{label}] Size: {size}, Flags: {flags}, Bitsize: {bitsize}, Alpha: {alpha}"
+    )
+
+
+def smart_convert(
+    original: pygame.Surface,
+    colorkey: Optional[ColorLike],
+    pixelalpha: bool,
+    preserve_alpha_flag: bool = False,
+) -> pygame.Surface:
     """
     Return new pygame Surface with optimal pixel/data format
 
-    This method does several interactive_tests on a surface to determine the optimal
+    This method does several interactive tests on a surface to determine the optimal
     flags and pixel format for each tile surface.
 
     Parameters:
         original: tile surface to inspect
         colorkey: optional colorkey for the tileset image
         pixelalpha: if true, prefer per-pixel alpha surfaces
+        preserve_alpha_flag: if True, retain SRCALPHA format even if transparency isn't detected
 
     Returns:
         new tile surface
-
     """
-    # tiled set a colorkey
+    width, height = original.get_size()
+    tile = None
+
+    def force_alpha():
+        return original.convert_alpha()
+
     if colorkey:
-        tile = original.convert()
-        tile.set_colorkey(colorkey, pygame.RLEACCEL)
-        # TODO: if there is a colorkey, count the colorkey pixels to determine if RLEACCEL should be used
+        colorkey_pixels = count_colorkey_pixels(original, colorkey)
+        ratio = colorkey_pixels / (width * height)
 
-    # no colorkey, so use a mask to determine if there are transparent pixels
-    else:
-        tile_size = original.get_size()
-        threshold = 254  # the default
-
-        try:
-            # count the number of pixels in the tile that are not transparent
-            px = pygame.mask.from_surface(original, threshold).count()
-        except:
-            # pygame_sdl2 will fail because the mask module is not included
-            # in this case, just convert_alpha and return it
-            return original.convert_alpha()
-
-        # there are no transparent pixels in the image
-        if px == tile_size[0] * tile_size[1]:
+        if ratio > 0.5:
             tile = original.convert()
-
-        # there are transparent pixels, and set for perpixel alpha
-        elif pixelalpha:
-            tile = original.convert_alpha()
-
-        # there are transparent pixels, and we won't handle them
+            tile.set_colorkey(colorkey, pygame.RLEACCEL)
+        else:
+            tile = force_alpha() if pixelalpha else original.convert()
+            tile.set_colorkey(colorkey)
+    else:
+        if has_transparency(original):
+            tile = force_alpha()
+        elif preserve_alpha_flag and original.get_flags() & pygame.SRCALPHA:
+            tile = force_alpha()
         else:
             tile = original.convert()
 
+    # Optional: log_surface_properties(tile, label="Converted Tile")
     return tile
 
 
-def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], pixelalpha: bool=True, **kwargs):
+def pygame_image_loader(
+    filename: str, colorkey: Optional[ColorLike], **kwargs: Any
+) -> Callable[[Optional[pygame.Rect], Optional[TileFlags]], pygame.Surface]:
     """
     pytmx image loader for pygame
 
@@ -115,14 +164,24 @@ def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], pixelalpha
 
     Returns:
         function to load tile images
-
     """
     if colorkey:
-        colorkey = pygame.Color(f"#{colorkey}")
+        if isinstance(colorkey, str):
+            if not colorkey.startswith("#") and len(colorkey) in (6, 8):
+                colorkey = pygame.Color(f"#{colorkey}")
+            else:
+                colorkey = pygame.Color(colorkey)
+        elif isinstance(colorkey, tuple) and 3 <= len(colorkey) <= 4:
+            colorkey = pygame.Color(colorkey)
+        else:
+            logger.error("Invalid colorkey")
+            raise ValueError("Invalid colorkey")
 
     image = pygame.image.load(filename)
 
-    def load_image(rect=None, flags=None):
+    def load_image(
+        rect: Optional[pygame.Rect] = None, flags: Optional[TileFlags] = None
+    ) -> pygame.Surface:
         if rect:
             try:
                 tile = image.subsurface(rect)
@@ -142,7 +201,9 @@ def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], pixelalpha
     return load_image
 
 
-def load_pygame(filename: str, *args, **kwargs) -> TiledMap:
+
+def load_pygame(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
+
     """Load a TMX file, images, and return a TiledMap class
 
     PYGAME USERS: Use me.
@@ -166,7 +227,6 @@ def load_pygame(filename: str, *args, **kwargs) -> TiledMap:
 
     Returns:
         new pytmx.TiledMap object
-
     """
     kwargs["image_loader"] = pygame_image_loader
     return TiledMap(filename, *args, **kwargs)
@@ -188,11 +248,10 @@ def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Unio
 
     Returns:
         list of pygame Rect objects
-
     """
     if isinstance(tileset, int):
         try:
-            tileset = tmxmap.tilesets[tileset]
+            tileset_obj = tmxmap.tilesets[tileset]
         except IndexError:
             msg = f"Tileset #{tileset} not found in map {tmxmap}."
             logger.debug(msg)
@@ -200,21 +259,24 @@ def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Unio
 
     elif isinstance(tileset, str):
         try:
-            tileset = [t for t in tmxmap.tilesets if t.name == tileset].pop()
-        except IndexError:
-            msg = f'Tileset "{tileset}" not found in map {tmxmap}.'
+            # Find the tileset with the matching name
+            tileset_obj = next((t for t in tmxmap.tilesets if t.name == tileset), None)
+            if tileset_obj is None:
+                msg = f'Tileset "{tileset}" not found in map {tmxmap}.'
+                logger.debug(msg)
+                raise ValueError(msg)
+        except Exception as e:
+            msg = f"Error finding tileset: {e}"
             logger.debug(msg)
             raise ValueError(msg)
-
-    elif tileset:
-        msg = "Tileset must be either a int or string. got: {0}"
-        logger.debug(msg.format(type(tileset)))
-        raise TypeError
 
     gid = None
     if real_gid:
         try:
-            gid, flags = tmxmap.map_gid(real_gid)[0]
+            # Get the map GID and flags
+            map_gid = tmxmap.map_gid(real_gid)
+            if map_gid:
+                gid, flags = map_gid[0]
         except IndexError:
             msg = f"GID #{real_gid} not found"
             logger.debug(msg)
@@ -224,18 +286,25 @@ def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Unio
         layer_data = tmxmap.get_layer_data(layer)
     elif isinstance(layer, str):
         try:
-            layer = [l for l in tmxmap.layers if l.name == layer].pop()
-            layer_data = layer.data
-        except IndexError:
-            msg = f'Layer "{layer}" not found in map {tmxmap}.'
+            # Find the layer with the matching name
+            layer_obj = next(
+                (l for l in tmxmap.layers if l.name and l.name == layer), None
+            )
+            if layer_obj is None:
+                msg = f'Layer "{layer}" not found in map {tmxmap}.'
+                logger.debug(msg)
+                raise ValueError(msg)
+            layer_data = layer_obj.data
+        except Exception as e:
+            msg = f"Error finding layer: {e}"
             logger.debug(msg)
             raise ValueError(msg)
 
-    p = itertools.product(range(tmxmap.width), range(tmxmap.height))
-    if gid:
-        points = [(x, y) for (x, y) in p if layer_data[y][x] == gid]
-    else:
-        points = [(x, y) for (x, y) in p if layer_data[y][x]]
+    points = []
+    for x, y in itertools.product(range(tmxmap.width), range(tmxmap.height)):
+        tile_gid = layer_data[y][x]
+        if (gid is None and tile_gid) or (gid == tile_gid):
+            points.append((x, y))
 
     rects = simplify(points, tmxmap.tilewidth, tmxmap.tileheight)
     return rects
@@ -288,15 +357,28 @@ def simplify(
     making a list of rects, one for each tile on the map!
     """
 
-    def pick_rect(points, rects) -> None:
-        ox, oy = sorted([(sum(p), p) for p in points])[0][1]
+    if not all_points:
+        return []
+
+    point_set = set(all_points)
+
+    rect_list: list[pygame.Rect] = []
+
+    def pick_rect(points: set[PointLike], rects: list[pygame.Rect]) -> None:
+        """
+        Recursively pick a rect from the points and add it to the rects list.
+        """
+        if not points:
+            return
+
+        ox, oy = min(points, key=lambda p: (p[0], p[1]))
         x = ox
         y = oy
         ex = None
 
-        while 1:
+        while True:
             x += 1
-            if not (x, y) in points:
+            if (x, y) not in points:
                 if ex is None:
                     ex = x - 1
 
@@ -304,7 +386,6 @@ def simplify(
                     if x == ex + 1:
                         y += 1
                         x = ox
-
                     else:
                         y -= 1
                         break
@@ -323,14 +404,10 @@ def simplify(
         rects.append(c_rect)
 
         rect = pygame.Rect(ox, oy, ex - ox + 1, y - oy + 1)
-        kill = [p for p in points if rect.collidepoint(p)]
-        [points.remove(i) for i in kill]
+        points.difference_update({p for p in points if rect.collidepoint(p)})
 
-        if points:
-            pick_rect(points, rects)
+        pick_rect(points, rects)
 
-    rect_list = []
-    while all_points:
-        pick_rect(all_points, rect_list)
+    pick_rect(point_set, rect_list)
 
     return rect_list
