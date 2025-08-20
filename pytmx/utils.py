@@ -120,11 +120,6 @@ def convert_to_bool(value: Optional[Union[str, int, float]] = None) -> bool:
     raise ValueError(f'cannot parse "{value}" as bool')
 
 
-def resolve_to_class(value: str, custom_types: dict):
-    """Convert Tiled custom type name to its defined Python object copy."""
-    return deepcopy(custom_types[value])
-
-
 def rotate(
     points: Sequence[Point],
     origin: Point,

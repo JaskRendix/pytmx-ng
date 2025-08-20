@@ -28,8 +28,9 @@ import logging
 from collections import defaultdict
 from typing import Optional
 from xml.etree import ElementTree
+from copy import deepcopy
 
-from .utils import convert_to_bool, resolve_to_class
+from .utils import convert_to_bool
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,10 @@ types.update(
     }
 )
 
+def resolve_to_class(value: str, custom_types: dict):
+    """Convert Tiled custom type name to its defined Python object copy."""
+    return deepcopy(custom_types[value])
+
 # casting for properties type
 prop_type = {
     "bool": convert_to_bool,
@@ -124,10 +129,7 @@ def parse_properties(node: ElementTree.Element, customs: Optional[dict] = None) 
                 if "type" in subnode.keys():
                     cls = prop_type[subnode.get("type")]
             except Exception:
-                logger.info(
-                    "Type %s not a built-in type. Defaulting to string-cast.",
-                    subnode.get("type"),
-                )
+                logger.info(f"Type {subnode.get('type')} not a built-in type. Defaulting to string-cast.")
 
             if "class" == subnode.get("type"):
                 new = resolve_to_class(subnode.get("propertytype"), customs or {})

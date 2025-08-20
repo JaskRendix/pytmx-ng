@@ -25,7 +25,7 @@ Imports are organized and documented for clarity.
 # --- stdlib imports ---------------------------------------------------------
 from collections import defaultdict
 from logging import getLogger
-from typing import Optional, Iterable, Union
+from typing import Optional, Iterable
 from xml.etree import ElementTree
 import json
 import os
@@ -39,6 +39,7 @@ from .utils import default_image_loader, decode_gid
 from .tile_layer import TiledTileLayer
 from .image_layer import TiledImageLayer
 from .group_layer import TiledGroupLayer
+from .layer import TiledLayer
 from .object_group import TiledObjectGroup
 from .tileset import TiledTileset
 from .object import TiledObject
@@ -46,8 +47,6 @@ from .class_type import TiledClassType
 
 
 logger = getLogger(__name__)
-
-TiledLayer = Union[TiledTileLayer, TiledImageLayer, TiledGroupLayer, TiledObjectGroup]
 
 
 class TiledMap(TiledElement):
@@ -74,7 +73,7 @@ class TiledMap(TiledElement):
             allow_duplicate_names (bool): Allow duplicates in objects' metadata.
 
         """
-        TiledElement.__init__(self)
+        super().__init__()
         self.filename = filename
         self.custom_property_filename = custom_property_filename
         self.image_loader = image_loader
@@ -138,7 +137,8 @@ class TiledMap(TiledElement):
 
         if filename:
             try:
-                self.parse_xml(ElementTree.parse(self.filename).getroot())
+                root_node = ElementTree.parse(self.filename).getroot()
+                self.parse_xml(root_node)
             except Exception as e:
                 logger.error(f"Error loading map file: {self.filename}")
                 raise e
@@ -180,7 +180,7 @@ class TiledMap(TiledElement):
 
         """
         self._set_properties(node)
-        self.background_color = node.get("backgroundcolor", self.background_color)
+        self.background_color = node.get("backgroundcolor", None)
 
         # ***         do not change this load order!         *** #
         # ***    gid mapping errors will occur if changed    *** #
@@ -215,7 +215,7 @@ class TiledMap(TiledElement):
         # iterate through tile objects and handle the image
         for o in [o for o in self.objects if o.gid]:
             # Decode rotation and flipping flags from the GID
-            gid, flags = decode_gid(o.gid)
+            _, flags = decode_gid(o.gid)
             rotation = self.get_rotation_from_flags(flags)  # Get rotation based on flags
 
             # gids might also have properties assigned to them
@@ -587,8 +587,16 @@ class TiledMap(TiledElement):
         Returns:
             TiledObject: The found object.
 
+        Raises:
+            ValueError: if object by name does not exist
+
         """
-        return self.objects_by_name[name]
+        try:
+            return self.objects_by_name[name]
+        except KeyError:
+            msg = f'Object "{name}" not found.'
+            logger.debug(msg)
+            raise ValueError(msg)
 
     def get_tileset_from_gid(self, gid: int) -> TiledTileset:
         """Return tileset that owns the gid.
@@ -609,13 +617,17 @@ class TiledMap(TiledElement):
         try:
             tiled_gid = self.tiledgidmap[gid]
         except KeyError:
-            raise ValueError("Tile GID not found")
+            msg = f"Tile GID {gid} not found."
+            logger.debug(msg)
+            raise ValueError(msg)
 
         for tileset in sorted(self.tilesets, key=attrgetter("firstgid"), reverse=True):
             if tiled_gid >= tileset.firstgid:
                 return tileset
 
-        raise ValueError("Tileset not found")
+        msg = "Tileset not found"
+        logger.debug(msg)
+        raise ValueError(msg)
 
     def get_tile_colliders(self) -> Iterable[tuple[int, list[dict]]]:
         """Return iterator of (gid, dict) pairs of tiles with colliders.
@@ -698,11 +710,7 @@ class TiledMap(TiledElement):
             if l.visible and isinstance(l, TiledObjectGroup)
         )
 
-    def register_gid(
-        self,
-        tiled_gid: int,
-        flags: Optional[TileFlags] = None,
-    ) -> int:
+    def register_gid(self, tiled_gid: int, flags: Optional[TileFlags] = None) -> int:
         """Used to manage the mapping of GIDs between .tmx and pytmx.
 
         Args:
@@ -714,7 +722,7 @@ class TiledMap(TiledElement):
 
         """
         if flags is None:
-            flags = TileFlags(0, 0, 0)
+            flags = TileFlags(False, False, False)
 
         if tiled_gid:
             try:
@@ -730,10 +738,7 @@ class TiledMap(TiledElement):
         else:
             return 0
 
-    def register_gid_check_flags(
-        self,
-        tiled_gid: int,
-    ) -> int:
+    def register_gid_check_flags(self, tiled_gid: int) -> int:
         """Used to manage the mapping of GIDs between .tmx and pytmx.
 
         Checks the GID for rotation/flip flags

@@ -19,10 +19,10 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 from xml.etree import ElementTree
+
 from .element import TiledElement
 from .constants import Point
 from .utils import rotate
-from .properties import types
 
 
 class TiledObject(TiledElement):

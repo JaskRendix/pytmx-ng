@@ -19,7 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Base element types shared by pytmx models.
 """
 from logging import getLogger
-from typing import Self
+from typing import Self, Iterable, Tuple, Any
 from xml.etree import ElementTree
 from .properties import parse_properties, types
 
@@ -52,12 +52,29 @@ class TiledElement:
         """
         return cls().parse_xml(ElementTree.fromstring(xml_string))
 
-    def _cast_and_set_attributes_from_node_items(self, items) -> None:
+    def _cast_and_set_attributes_from_node_items(self, items: Iterable[Tuple[str, Any]]) -> None:
+        """
+        Cast and set attributes from node items.
+
+        Args:
+            items (Iterable[Tuple[str, Any]]): The node items to cast and set.
+
+        """
         for key, value in items:
             casted_value = types[key](value)
             setattr(self, key, casted_value)
 
-    def _contains_invalid_property_name(self, items) -> bool:
+    def _contains_invalid_property_name(self, items: Iterable[Tuple[str, Any]]) -> bool:
+        """
+        Check if the properties contain invalid property names.
+
+        Args:
+            items (Iterable[Tuple[str, Any]]): The properties to check.
+
+        Returns:
+            bool: True if the properties contain invalid property names, False otherwise.
+
+        """
         if self.allow_duplicate_names:
             return False
 
