@@ -18,10 +18,9 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 
-
 from .constants import TileFlags
-from .properties import parse_properties
-from .utils import convert_to_bool, resolve_to_class
+from .properties import parse_properties, resolve_to_class
+from .utils import convert_to_bool
 from .class_type import TiledClassType
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
