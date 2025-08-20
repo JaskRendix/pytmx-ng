@@ -22,8 +22,8 @@ import logging
 from collections.abc import Callable
 from typing import Any, Optional, Union
 
-import pytmx
-from pytmx.pytmx import ColorLike, PointLike, TileFlags
+from .constants import TileFlags, ColorLike, PointLike
+from .map import TiledMap
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,8 @@ except ImportError:
 __all__ = ["load_pygame", "pygame_image_loader", "simplify", "build_rects"]
 
 
-def handle_transformation(
-    tile: pygame.Surface, flags: pytmx.TileFlags
-) -> pygame.Surface:
+
+def handle_transformation(tile: pygame.Surface, flags: TileFlags) -> pygame.Surface:
     """
     Transform tile according to the flags and return a new one
 
@@ -178,7 +177,6 @@ def pygame_image_loader(
             logger.error("Invalid colorkey")
             raise ValueError("Invalid colorkey")
 
-    pixelalpha = kwargs.get("pixelalpha", True)
     image = pygame.image.load(filename)
 
     def load_image(
@@ -187,9 +185,10 @@ def pygame_image_loader(
         if rect:
             try:
                 tile = image.subsurface(rect)
-            except ValueError:
-                logger.error("Tile bounds outside bounds of tileset image")
-                raise
+            except ValueError as e:
+                msg = f"Tile bounds outside bounds of tileset image: {e}"
+                logger.error(msg)
+                raise ValueError(msg) from e
         else:
             tile = image.copy()
 
@@ -202,7 +201,9 @@ def pygame_image_loader(
     return load_image
 
 
-def load_pygame(filename: str, *args: Any, **kwargs: Any) -> pytmx.TiledMap:
+
+def load_pygame(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
+
     """Load a TMX file, images, and return a TiledMap class
 
     PYGAME USERS: Use me.
@@ -214,7 +215,7 @@ def load_pygame(filename: str, *args: Any, **kwargs: Any) -> pytmx.TiledMap:
 
     if a color key is specified as an argument, or in the tmx data, the
     per-pixel alpha will not be used at all. if the tileset's image has colorkey
-    transparency set in Tiled, the util_pygam will return images that have their
+    transparency set in Tiled, the util_pygame will return images that have their
     transparency already set.
 
     TL;DR:
@@ -228,15 +229,10 @@ def load_pygame(filename: str, *args: Any, **kwargs: Any) -> pytmx.TiledMap:
         new pytmx.TiledMap object
     """
     kwargs["image_loader"] = pygame_image_loader
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)
 
 
-def build_rects(
-    tmxmap: pytmx.TiledMap,
-    layer: Union[int, str],
-    tileset: Optional[Union[int, str]],
-    real_gid: Optional[int],
-) -> list[pygame.Rect]:
+def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Union[int, str]], real_gid: Optional[int]) -> list[pygame.Rect]:
     """
     Generate a set of non-overlapping rects that represents the distribution of the specified gid.
 
