@@ -23,7 +23,7 @@ from typing import Any, Optional
 
 from pygame.rect import Rect
 
-import pytmx
+from .constants import TileFlags
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class PygameSDL2Tile:
     flipy: bool = False
 
 
-def handle_flags(flags: Optional[pytmx.TileFlags]) -> tuple[float, bool, bool]:
+def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
     """
     Return angle and flip values for the SDL2 renderer
 
@@ -56,9 +56,9 @@ def handle_flags(flags: Optional[pytmx.TileFlags]) -> tuple[float, bool, bool]:
 
     if flags.flipped_diagonally:
         if flags.flipped_vertically:
-            return 270, False, False
+            return 270.0, False, False
         else:
-            return 90, False, False
+            return 90.0, False, False
     else:
         return 0.0, flags.flipped_horizontally, flags.flipped_vertically
 
