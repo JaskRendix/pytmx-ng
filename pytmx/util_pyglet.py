@@ -29,8 +29,8 @@ except ImportError:
     logger.error("cannot import pyglet (is it installed?)")
     raise
 
-import pytmx
-from pytmx.pytmx import ColorLike, TileFlags
+from .map import TiledMap
+from .constants import ColorLike, TileFlags
 
 
 def pyglet_image_loader(
@@ -104,7 +104,7 @@ def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
     return 0.0, flipped_h, flipped_v
 
 
-def load_pyglet(filename: str, *args: Any, **kwargs: Any) -> pytmx.TiledMap:
+def load_pyglet(filename: str, *args: Any, **kwargs) -> TiledMap:
     kwargs["image_loader"] = pyglet_image_loader
     kwargs["invert_y"] = True
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)

@@ -21,8 +21,8 @@ import itertools
 import logging
 from typing import Optional, Union
 
-import pytmx
-from pytmx.pytmx import ColorLike, PointLike
+from .constants import TileFlags, ColorLike, PointLike
+from .map import TiledMap
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,7 @@ except ImportError:
 __all__ = ["load_pygame", "pygame_image_loader", "simplify", "build_rects"]
 
 
-def handle_transformation(
-    tile: pygame.Surface,
-    flags: pytmx.TileFlags,
-) -> pygame.Surface:
+def handle_transformation(tile: pygame.Surface, flags: TileFlags) -> pygame.Surface:
     """
     Transform tile according to the flags and return a new one
 
@@ -58,11 +55,7 @@ def handle_transformation(
     return tile
 
 
-def smart_convert(
-    original: pygame.Surface,
-    colorkey: Optional[ColorLike],
-    pixelalpha: bool,
-) -> pygame.Surface:
+def smart_convert(original: pygame.Surface, colorkey: Optional[ColorLike], pixelalpha: bool) -> pygame.Surface:
     """
     Return new pygame Surface with optimal pixel/data format
 
@@ -112,7 +105,7 @@ def smart_convert(
     return tile
 
 
-def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], **kwargs):
+def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], pixelalpha: bool=True, **kwargs):
     """
     pytmx image loader for pygame
 
@@ -125,18 +118,18 @@ def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], **kwargs):
 
     """
     if colorkey:
-        colorkey = pygame.Color("#{0}".format(colorkey))
+        colorkey = pygame.Color(f"#{colorkey}")
 
-    pixelalpha = kwargs.get("pixelalpha", True)
     image = pygame.image.load(filename)
 
     def load_image(rect=None, flags=None):
         if rect:
             try:
                 tile = image.subsurface(rect)
-            except ValueError:
-                logger.error("Tile bounds outside bounds of tileset image")
-                raise
+            except ValueError as e:
+                msg = f"Tile bounds outside bounds of tileset image: {e}"
+                logger.error(msg)
+                raise ValueError(msg) from e
         else:
             tile = image.copy()
 
@@ -149,11 +142,7 @@ def pygame_image_loader(filename: str, colorkey: Optional[ColorLike], **kwargs):
     return load_image
 
 
-def load_pygame(
-    filename: str,
-    *args,
-    **kwargs,
-) -> pytmx.TiledMap:
+def load_pygame(filename: str, *args, **kwargs) -> TiledMap:
     """Load a TMX file, images, and return a TiledMap class
 
     PYGAME USERS: Use me.
@@ -165,7 +154,7 @@ def load_pygame(
 
     if a color key is specified as an argument, or in the tmx data, the
     per-pixel alpha will not be used at all. if the tileset's image has colorkey
-    transparency set in Tiled, the util_pygam will return images that have their
+    transparency set in Tiled, the util_pygame will return images that have their
     transparency already set.
 
     TL;DR:
@@ -180,15 +169,10 @@ def load_pygame(
 
     """
     kwargs["image_loader"] = pygame_image_loader
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)
 
 
-def build_rects(
-    tmxmap: pytmx.TiledMap,
-    layer: Union[int, str],
-    tileset: Optional[Union[int, str]],
-    real_gid: Optional[int],
-) -> list[pygame.Rect]:
+def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Union[int, str]], real_gid: Optional[int]) -> list[pygame.Rect]:
     """
     Generate a set of non-overlapping rects that represents the distribution of the specified gid.
 
@@ -210,17 +194,17 @@ def build_rects(
         try:
             tileset = tmxmap.tilesets[tileset]
         except IndexError:
-            msg = "Tileset #{0} not found in map {1}."
-            logger.debug(msg.format(tileset, tmxmap))
-            raise IndexError
+            msg = f"Tileset #{tileset} not found in map {tmxmap}."
+            logger.debug(msg)
+            raise IndexError(msg)
 
     elif isinstance(tileset, str):
         try:
             tileset = [t for t in tmxmap.tilesets if t.name == tileset].pop()
         except IndexError:
-            msg = 'Tileset "{0}" not found in map {1}.'
-            logger.debug(msg.format(tileset, tmxmap))
-            raise ValueError
+            msg = f'Tileset "{tileset}" not found in map {tmxmap}.'
+            logger.debug(msg)
+            raise ValueError(msg)
 
     elif tileset:
         msg = "Tileset must be either a int or string. got: {0}"
@@ -232,9 +216,9 @@ def build_rects(
         try:
             gid, flags = tmxmap.map_gid(real_gid)[0]
         except IndexError:
-            msg = "GID #{0} not found"
-            logger.debug(msg.format(real_gid))
-            raise ValueError
+            msg = f"GID #{real_gid} not found"
+            logger.debug(msg)
+            raise ValueError(msg)
 
     if isinstance(layer, int):
         layer_data = tmxmap.get_layer_data(layer)
@@ -243,9 +227,9 @@ def build_rects(
             layer = [l for l in tmxmap.layers if l.name == layer].pop()
             layer_data = layer.data
         except IndexError:
-            msg = 'Layer "{0}" not found in map {1}.'
-            logger.debug(msg.format(layer, tmxmap))
-            raise ValueError
+            msg = f'Layer "{layer}" not found in map {tmxmap}.'
+            logger.debug(msg)
+            raise ValueError(msg)
 
     p = itertools.product(range(tmxmap.width), range(tmxmap.height))
     if gid:
