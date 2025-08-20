@@ -28,7 +28,7 @@ except ImportError:
     logger.error("cannot import pysdl2 (is it installed?)")
     raise
 
-import pytmx
+from .map import TiledMap
 
 __all__ = [
     "load_pysdl2",
@@ -80,6 +80,6 @@ def pysdl2_image_loader(renderer, filename, colorkey, **kwargs):
     return load_image
 
 
-def load_pysdl2(renderer, filename, *args, **kwargs):
+def load_pysdl2(renderer, filename, *args, **kwargs) -> TiledMap:
     kwargs["image_loader"] = partial(pysdl2_image_loader, renderer)
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)
