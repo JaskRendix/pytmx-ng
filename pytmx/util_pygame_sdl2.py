@@ -24,6 +24,7 @@ from typing import Any, Optional
 from pygame.rect import Rect
 
 from .constants import TileFlags
+from .map import TiledMap
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +97,10 @@ def pygame_sd2_image_loader(renderer: Renderer, filename: str, colorkey, **kwarg
 
 def load_pygame_sdl2(
     renderer: Renderer, filename: str, *args: Any, **kwargs: Any
-) -> pytmx.TiledMap:
+) -> TiledMap:
     """
     Load a TMX file, images, and return a TiledMap class
 
     """
     kwargs["image_loader"] = partial(pygame_sd2_image_loader, renderer)
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)

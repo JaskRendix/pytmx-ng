@@ -27,7 +27,7 @@ except ImportError:
     logger.error("cannot import pyglet (is it installed?)")
     raise
 
-import pytmx
+from .map import TiledMap
 
 
 def pyglet_image_loader(filename, colorkey, **kwargs):
@@ -68,7 +68,7 @@ def pyglet_image_loader(filename, colorkey, **kwargs):
     return load_image
 
 
-def load_pyglet(filename, *args, **kwargs):
+def load_pyglet(filename, *args, **kwargs) -> TiledMap:
     kwargs["image_loader"] = pyglet_image_loader
     kwargs["invert_y"] = True
-    return pytmx.TiledMap(filename, *args, **kwargs)
+    return TiledMap(filename, *args, **kwargs)
