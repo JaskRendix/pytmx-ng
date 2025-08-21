@@ -24,13 +24,22 @@ classes and can be reused across the package.
 
 from __future__ import annotations
 
-import gzip
-import struct
-import zlib
 from base64 import b64decode
 from collections.abc import Sequence
+import gzip
+from logging import getLogger
 from math import cos, radians, sin
+import struct
 from typing import Optional, Union
+import zlib
+
+logger = getLogger(__name__)
+
+try:
+    import zstd
+except ImportError:
+    logger.warning("zstd compression is not installed. Disabling zstd support.")
+    zstd = None
 
 from .constants import (
     GID_MASK,
@@ -95,6 +104,11 @@ def unpack_gids(
             data = gzip.decompress(data)
         elif compression == "zlib":
             data = zlib.decompress(data)
+        elif compression == "zstd":
+            if zstd:
+                data = zstd.decompress(data)
+            else:
+                raise ValueError("zstd compression is not installed.")
         elif compression:
             raise ValueError(f"layer compression {compression} is not supported.")
         fmt = "<%dL" % (len(data) // 4)

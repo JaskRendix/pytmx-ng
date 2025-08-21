@@ -768,7 +768,7 @@ class TiledMap(TiledElement):
             return self.gidmap[int(tiled_gid)]
         except KeyError:
             return None
-        except TypeError:
+        except (TypeError, ValueError):
             msg = "GIDs must be an integer"
             logger.debug(msg)
             raise TypeError(msg)
