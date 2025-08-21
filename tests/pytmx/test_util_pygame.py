@@ -491,7 +491,8 @@ class TestSmartConvert(unittest.TestCase):
 
     @patch("pygame.mask.from_surface")
     def test_mask_failure_fallback(self, mock_mask):
-        mock_mask.side_effect = Exception("Fake mask failure")
+        # Simulate pygame raising an error during mask generation; util should fallback
+        mock_mask.side_effect = pygame.error("Fake mask failure")
         result = smart_convert(self.base_surface, None, False)
         self.assertTrue(result.get_flags() & pygame.SRCALPHA)
 
