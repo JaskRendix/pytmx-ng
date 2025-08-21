@@ -25,8 +25,10 @@ from typing import Optional
 import pyglet
 from pyglet.sprite import Sprite
 
-from pytmx import *
-from pytmx.pytmx import ColorLike, PointLike
+from pytmx.constants import ColorLike, PointLike
+from pytmx.image_layer import TiledImageLayer
+from pytmx.object_group import TiledObjectGroup
+from pytmx.tile_layer import TiledTileLayer
 from pytmx.util_pyglet import load_pyglet
 
 

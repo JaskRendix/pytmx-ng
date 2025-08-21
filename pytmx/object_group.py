@@ -50,13 +50,11 @@ class TiledObjectGroup(TiledElement, list):
         self.parse_xml(node)
 
     def parse_xml(self, node: ElementTree.Element) -> Self:
-        """Parse an Object Group from ElementTree xml node
-
-        Args:
-            node (ElementTree.Element): Node to parse.
+        """
+        Parse a TiledObjectGroup layer from ElementTree xml node.
 
         Returns:
-            TiledObjectGroup: The parsed object group.
+            TiledObjectGroup: The parsed TiledObjectGroup layer.
         """
         self._set_properties(node, self.custom_types)
         self.extend(

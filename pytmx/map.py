@@ -31,7 +31,7 @@ from collections.abc import Iterable
 from itertools import chain, product
 from logging import getLogger
 from operator import attrgetter
-from typing import Optional
+from typing import Optional, Self
 from xml.etree import ElementTree
 
 from .class_type import TiledClassType
@@ -181,11 +181,12 @@ class TiledMap(TiledElement):
 
                 self.custom_types[custom_type["name"]] = new
 
-    def parse_xml(self, node: ElementTree.Element) -> None:
-        """Parse a map from ElementTree xml node.
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledMap layer from ElementTree xml node.
 
-        Args:
-            node (ElementTree.Element): ElementTree xml node to parse.
+        Returns:
+            TiledMap: The parsed TiledMap layer.
         """
         self._set_properties(node)
         self.background_color = node.get("backgroundcolor", None)
