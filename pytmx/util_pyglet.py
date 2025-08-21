@@ -74,7 +74,7 @@ def pyglet_image_loader(
 
             return tile
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error(
                 "Error extracting or transforming tile %s: %s", rect, e, exc_info=True
             )

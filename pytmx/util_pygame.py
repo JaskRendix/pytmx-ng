@@ -87,7 +87,7 @@ def has_transparency(surface: pygame.Surface, threshold: int = 254) -> bool:
     try:
         mask = pygame.mask.from_surface(surface, threshold)
         return mask.count() < surface.get_width() * surface.get_height()
-    except Exception:
+    except (pygame.error, AttributeError, TypeError, ValueError):
         return True  # Assume transparency if mask fails
 
 
@@ -265,12 +265,13 @@ def build_rects(
         try:
             # Find the tileset with the matching name
             tileset_obj = next((t for t in tmxmap.tilesets if t.name == tileset), None)
-            if tileset_obj is None:
-                msg = f'Tileset "{tileset}" not found in map {tmxmap}.'
-                logger.debug(msg)
-                raise ValueError(msg)
-        except Exception as e:
+        except (AttributeError, TypeError) as e:
             msg = f"Error finding tileset: {e}"
+            logger.debug(msg)
+            raise ValueError(msg)
+
+        if tileset_obj is None:
+            msg = f'Tileset "{tileset}" not found in map {tmxmap}.'
             logger.debug(msg)
             raise ValueError(msg)
 
@@ -291,18 +292,18 @@ def build_rects(
     elif isinstance(layer, str):
         try:
             # Find the layer with the matching name
-            layer_obj = next(
-                (l for l in tmxmap.layers if l.name and l.name == layer), None
-            )
-            if layer_obj is None:
-                msg = f'Layer "{layer}" not found in map {tmxmap}.'
-                logger.debug(msg)
-                raise ValueError(msg)
-            layer_data = layer_obj.data
-        except Exception as e:
+            layer_obj = next((l for l in tmxmap.layers if l.name and l.name == layer), None)
+        except (AttributeError, TypeError) as e:
             msg = f"Error finding layer: {e}"
             logger.debug(msg)
             raise ValueError(msg)
+
+        if layer_obj is None:
+            msg = f'Layer "{layer}" not found in map {tmxmap}.'
+            logger.debug(msg)
+            raise ValueError(msg)
+
+        layer_data = layer_obj.data
 
     points = []
     for x, y in itertools.product(range(tmxmap.width), range(tmxmap.height)):
