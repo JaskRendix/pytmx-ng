@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Self
+from typing import Any, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -45,11 +45,11 @@ class TiledImageLayer(TiledElement):
         self.parse_xml(node)
 
     @property
-    def image(self):
+    def image(self) -> Any:
         """Image for the object, if assigned.
 
         Returns:
-            ???: the image object type will depend on the loader (ie. pygame.Surface).
+            Any: the image object type will depend on the loader (ie. pygame.Surface).
         """
         if self.gid:
             return self.parent.images[self.gid]

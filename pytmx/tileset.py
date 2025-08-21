@@ -21,7 +21,7 @@ Tiled Tileset parser and model.
 
 import logging
 import os
-from typing import Self
+from typing import Any, Self
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 from .constants import AnimationFrame
@@ -83,7 +83,7 @@ class TiledTileset(TiledElement):
         logger.debug(f"Resolved path: {resolved}")
         return resolved
 
-    def _parse_tile_properties(self, node: ElementTree.Element) -> dict[str, str]:
+    def _parse_tile_properties(self, node: ElementTree.Element) -> dict[str, Any]:
         """
         Parses a single tile's attributes and custom properties.
         """
@@ -92,9 +92,7 @@ class TiledTileset(TiledElement):
         logger.debug(f"Parsed tile properties: {props}")
         return props
 
-    def _parse_animation_frames(
-        self, anim_node: ElementTree.Element
-    ) -> list[AnimationFrame]:
+    def _parse_animation_frames(self, anim_node: ElementTree.Element) -> list[AnimationFrame]:
         """
         Parses animation frames from a tile's animation node.
         """

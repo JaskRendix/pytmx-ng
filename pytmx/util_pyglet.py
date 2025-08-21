@@ -18,10 +18,9 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
 import logging
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
-from pathlib import Path
-from typing import Any, Optional
 
 try:
     import pyglet
@@ -35,7 +34,7 @@ from .map import TiledMap
 
 def pyglet_image_loader(
     filename: str, colorkey: Optional[ColorLike] = None, **kwargs: Any
-):
+) -> Callable[[Optional[tuple[int, int, int, int]], Optional[TileFlags]], Any]:
     """basic image loading with pyglet
 
     returns pyglet Images, not textures
@@ -60,7 +59,7 @@ def pyglet_image_loader(
     def load_image(
         rect: Optional[tuple[int, int, int, int]] = None,
         flags: Optional[TileFlags] = None,
-    ):
+    ) -> Any:
         try:
             if rect:
                 x, y, w, h = rect

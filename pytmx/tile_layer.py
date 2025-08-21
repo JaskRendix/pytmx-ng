@@ -21,7 +21,7 @@ Tiled tile layer model and parser.
 
 import logging
 from collections.abc import Iterable
-from typing import Self
+from typing import Any, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -53,7 +53,7 @@ class TiledTileLayer(TiledElement):
 
         self.parse_xml(node)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[tuple[int, int, int]]:
         return self.iter_data()
 
     def iter_data(self) -> Iterable[tuple[int, int, int]]:
@@ -66,7 +66,7 @@ class TiledTileLayer(TiledElement):
             for x, gid in enumerate(row):
                 yield x, y, gid
 
-    def tiles(self):
+    def tiles(self) -> Iterable[tuple[int, int, Any]]:
         """Yields X, Y, Image tuples for each tile in the layer.
 
         Yields:

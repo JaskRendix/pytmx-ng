@@ -31,7 +31,7 @@ from collections.abc import Iterable
 from itertools import chain, product
 from logging import getLogger
 from operator import attrgetter
-from typing import Optional, Self
+from typing import Any, Optional, Self, Iterator
 from xml.etree import ElementTree
 
 
@@ -153,11 +153,11 @@ class TiledMap(TiledElement):
                 logger.error(f"Error loading map file: {self.filename}")
                 raise e
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: "{self.filename}">'
 
     # iterate over layers and objects in map
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Self]:
         return chain(self.layers, self.objects)
 
     def _set_properties(self, node: ElementTree.Element) -> None:
@@ -342,7 +342,7 @@ class TiledMap(TiledElement):
                 image = loader()
                 self.images[real_gid] = image
 
-    def get_tile_image(self, x: int, y: int, nr_layer: int):
+    def get_tile_image(self, x: int, y: int, nr_layer: int) -> Any:
         """Return the tile image for this location.
 
         Args:
@@ -379,7 +379,7 @@ class TiledMap(TiledElement):
         else:
             return self.get_tile_image_by_gid(gid, x, y, nr_layer)
 
-    def get_tile_image_by_gid(self, gid: int, x: int, y: int, layer: int):
+    def get_tile_image_by_gid(self, gid: int, x: int, y: int, layer: int) -> Any:
         """
         Return the tile image for this location.
 
@@ -508,7 +508,7 @@ class TiledMap(TiledElement):
         """
         self.tile_properties[gid] = properties
 
-    def get_tile_properties_by_layer(self, layer: int):
+    def get_tile_properties_by_layer(self, layer: int) -> Iterator[tuple[int, dict[str, Any]]]:
         """Get the tile properties of each GID in layer.
 
         Args:
@@ -674,11 +674,11 @@ class TiledMap(TiledElement):
         return chain(*self.objectgroups)
 
     @property
-    def visible_layers(self):
+    def visible_layers(self) -> Iterable[TiledLayer]:
         """Returns iterator of Layer objects that are set "visible".
 
         Returns:
-            ???: Iterator of Layer objects that are set "visible".
+            Iterable[TiledLayer]: Iterator of Layer objects that are set "visible".
         """
 
         return (l for l in self.layers if l.visible)
