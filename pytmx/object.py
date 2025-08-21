@@ -19,7 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 
-from typing import Self
+from typing import Any, Self
 from xml.etree import ElementTree
 
 from .constants import Point
@@ -57,11 +57,11 @@ class TiledObject(TiledElement):
         self.parse_xml(node)
 
     @property
-    def image(self):
+    def image(self) -> Any:
         """Image for the object, if assigned.
 
         Returns:
-            ???: The image object type will depend on the loader (ie. pygame.Surface).
+            Any: The image object type will depend on the loader (ie. pygame.Surface).
         """
         if self.gid:
             return self.parent.images[self.gid]

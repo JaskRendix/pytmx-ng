@@ -108,7 +108,7 @@ class TiledElement:
 
         self.properties = properties
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         try:
             return self.properties[item]
         except KeyError:
@@ -117,7 +117,7 @@ class TiledElement:
             else:
                 raise AttributeError(f"Element has no property {item}")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if hasattr(self, "id"):
             return f'<{self.__class__.__name__}[{self.id}]: "{self.name}">'
         else:
