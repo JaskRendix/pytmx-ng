@@ -1,6 +1,7 @@
 import timeit
 
-from pytmx import TileFlags, decode_gid
+from pytmx.constants import TileFlags
+from pytmx.utils import decode_gid
 
 # Constants
 GID_TRANS_FLIPX = 1 << 31

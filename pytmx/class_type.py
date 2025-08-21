@@ -18,7 +18,9 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Custom Tiled class type container.
 """
+
 from typing import Any
+
 
 class TiledClassType:
     """Contains custom Tiled types."""
@@ -29,7 +31,6 @@ class TiledClassType:
         Args:
             name (str): The name of the class type.
             members (List[dict]): The members of the class type.
-
         """
         self.name = name
         for member in members:

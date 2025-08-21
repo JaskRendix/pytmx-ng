@@ -1,7 +1,8 @@
 import time
 from pathlib import Path
 
-from pytmx import TiledMap, decode_gid
+from pytmx.map import TiledMap
+from pytmx.utils import decode_gid
 
 # Optional: enable tracking cache hits
 flag_cache_stats = {"hits": 0, "misses": 0}

@@ -16,7 +16,9 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from xml.etree import ElementTree
+
 from .element import TiledElement
 
 
@@ -47,7 +49,6 @@ class TiledImageLayer(TiledElement):
 
         Returns:
             ???: the image object type will depend on the loader (ie. pygame.Surface).
-
         """
         if self.gid:
             return self.parent.images[self.gid]

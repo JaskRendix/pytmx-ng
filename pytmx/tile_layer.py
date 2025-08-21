@@ -18,12 +18,13 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Tiled tile layer model and parser.
 """
-from xml.etree import ElementTree
-from typing import Iterable
+
 import logging
+from typing import Iterable
+from xml.etree import ElementTree
 
 from .element import TiledElement
-from .utils import unpack_gids, reshape_data
+from .utils import reshape_data, unpack_gids
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,6 @@ class TiledTileLayer(TiledElement):
 
         Returns:
             Iterable[Tuple[int, int, int]]: Iterator of X, Y, GID tuples for each tile in the layer.
-
         """
         for y, row in enumerate(self.data):
             for x, gid in enumerate(row):
@@ -70,7 +70,6 @@ class TiledTileLayer(TiledElement):
 
         Yields:
             ???: Iterator of X, Y, Image tuples for each tile in the layer
-
         """
         images = self.parent.images
         for x, y, gid in [i for i in self.iter_data() if i[2]]:
@@ -93,7 +92,6 @@ class TiledTileLayer(TiledElement):
 
         Returns:
             TiledTileLayer: The parsed tile layer.
-
         """
         self._set_properties(node)
         data_node = node.find("data")
@@ -105,7 +103,9 @@ class TiledTileLayer(TiledElement):
 
         child = data_node.find("tile")
         if child is not None:
-            raise ValueError("XML tile elements are no longer supported. Must use base64 or csv map formats.")
+            raise ValueError(
+                "XML tile elements are no longer supported. Must use base64 or csv map formats."
+            )
 
         temp = [
             self.parent.register_gid_check_flags(gid)
@@ -118,4 +118,3 @@ class TiledTileLayer(TiledElement):
 
         self.data = reshape_data(temp, self.width)
         return self
-

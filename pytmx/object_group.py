@@ -18,11 +18,13 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Object group model and parser.
 """
+
 from typing import Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
 from .object import TiledObject
+
 
 class TiledObjectGroup(TiledElement, list):
     """Represents a Tiled ObjectGroup
@@ -55,7 +57,6 @@ class TiledObjectGroup(TiledElement, list):
 
         Returns:
             TiledObjectGroup: The parsed object group.
-
         """
         self._set_properties(node, self.custom_types)
         self.extend(
@@ -64,4 +65,3 @@ class TiledObjectGroup(TiledElement, list):
         )
 
         return self
-

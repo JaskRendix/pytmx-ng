@@ -4,7 +4,9 @@ import struct
 import unittest
 import zlib
 
-from pytmx import TiledMap, TileFlags, decode_gid, unpack_gids
+from pytmx.constants import TileFlags
+from pytmx.map import TiledMap
+from pytmx.utils import decode_gid, unpack_gids
 
 # Tiled gid flags
 GID_TRANS_FLIPX = 1 << 31

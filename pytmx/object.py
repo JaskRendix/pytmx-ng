@@ -18,10 +18,11 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Tiled object model and parser.
 """
+
 from xml.etree import ElementTree
 
-from .element import TiledElement
 from .constants import Point
+from .element import TiledElement
 from .utils import rotate
 
 
@@ -60,7 +61,6 @@ class TiledObject(TiledElement):
 
         Returns:
             ???: The image object type will depend on the loader (ie. pygame.Surface).
-
         """
         if self.gid:
             return self.parent.images[self.gid]
@@ -74,7 +74,6 @@ class TiledObject(TiledElement):
 
         Returns:
             TiledObject: The parsed xml node.
-
         """
 
         def read_points(text) -> tuple[tuple[float, float]]:
@@ -167,4 +166,3 @@ class TiledObject(TiledElement):
                 (self.x + self.width, self.y),
             ]
         ]
-

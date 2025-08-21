@@ -5,9 +5,11 @@ import pygame
 from pygame.rect import Rect
 from pygame.surface import Surface
 
-import pytmx
+from pytmx.constants import TileFlags
+from pytmx.layer import TiledTileLayer
+from pytmx.map import TiledMap
+from pytmx.tileset import TiledTileset
 from pytmx.util_pygame import (
-    TileFlags,
     build_rects,
     handle_transformation,
     pygame_image_loader,
@@ -291,20 +293,20 @@ class TestSimplify(unittest.TestCase):
 class TestBuildRects(unittest.TestCase):
 
     def setUp(self):
-        self.tmxmap = Mock(spec=pytmx.TiledMap)
+        self.tmxmap = Mock(spec=TiledMap)
         self.tmxmap.width = 10
         self.tmxmap.height = 10
         self.tmxmap.tilewidth = 32
         self.tmxmap.tileheight = 32
         self.tmxmap.tilesets = [
-            Mock(spec=pytmx.TiledTileset),
-            Mock(spec=pytmx.TiledTileset),
+            Mock(spec=TiledTileset),
+            Mock(spec=TiledTileset),
         ]
         self.tmxmap.tilesets[0].name = "tileset1"
         self.tmxmap.tilesets[1].name = "tileset2"
         self.tmxmap.layers = [
-            Mock(spec=pytmx.TiledTileLayer),
-            Mock(spec=pytmx.TiledTileLayer),
+            Mock(spec=TiledTileLayer),
+            Mock(spec=TiledTileLayer),
         ]
         self.tmxmap.layers[0].name = "layer1"
         self.tmxmap.layers[0].data = [[1 for _ in range(10)] for _ in range(10)]

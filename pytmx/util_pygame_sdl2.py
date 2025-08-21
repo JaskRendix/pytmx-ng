@@ -25,7 +25,7 @@ from typing import Any, Optional
 
 from pygame.rect import Rect
 
-from .constants import TileFlags, ColourLike, PointLike
+from .constants import ColorLike, PointLike, TileFlags
 from .map import TiledMap
 
 logger = logging.getLogger(__name__)

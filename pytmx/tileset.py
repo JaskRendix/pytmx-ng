@@ -18,16 +18,18 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Tiled Tileset parser and model.
 """
-import os
+
 import logging
+import os
 from xml.etree import ElementTree
 
-from .element import TiledElement
-from .properties import parse_properties, types
 from .constants import AnimationFrame
+from .element import TiledElement
 from .object_group import TiledObjectGroup
+from .properties import parse_properties, types
 
 logger = logging.getLogger(__name__)
+
 
 class TiledTileset(TiledElement):
     """Represents a Tiled Tileset
@@ -43,7 +45,6 @@ class TiledTileset(TiledElement):
         Args:
             parent (???): ???.
             node (ElementTree.Element): ???.
-
         """
         TiledElement.__init__(self)
         self.parent = parent
@@ -78,7 +79,6 @@ class TiledTileset(TiledElement):
 
         Returns:
             TiledTileset:
-
         """
         # if true, then node references an external tileset
         source = node.get("source", None)
@@ -92,7 +92,9 @@ class TiledTileset(TiledElement):
                 path = os.path.abspath(os.path.join(dirname, source))
                 if not os.path.exists(path):
                     # raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), path)
-                    raise Exception(f"Cannot find tileset file {source} from {self.parent.filename}, should be at {path}")
+                    raise Exception(
+                        f"Cannot find tileset file {source} from {self.parent.filename}, should be at {path}"
+                    )
 
                 try:
                     node = ElementTree.parse(path).getroot()
