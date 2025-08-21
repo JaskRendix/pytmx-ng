@@ -99,7 +99,7 @@ class TiledTileLayer(TiledElement):
         if chunk_nodes:
             msg = "TMX map size: infinite is not supported."
             logger.error(msg)
-            raise Exception
+            raise ValueError(msg)
 
         child = data_node.find("tile")
         if child is not None:

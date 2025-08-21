@@ -22,7 +22,7 @@ Tiled Tileset parser and model.
 import logging
 import os
 from xml.etree import ElementTree
-
+from xml.etree.ElementTree import ParseError
 from .constants import AnimationFrame
 from .element import TiledElement
 from .object_group import TiledObjectGroup
@@ -119,7 +119,7 @@ class TiledTileset(TiledElement):
 
                 resolved_path = self._resolve_path(source, relative_to_source=False)
                 if not os.path.exists(resolved_path):
-                    raise Exception(
+                    raise FileNotFoundError(
                         f"Cannot find tileset file {source} from {self.parent.filename}, "
                         f"should be at {resolved_path}"
                     )
@@ -128,14 +128,14 @@ class TiledTileset(TiledElement):
                     logger.debug(
                         f"Successfully loaded external tileset from {resolved_path}"
                     )
-                except IOError as io:
+                except (OSError, ParseError) as e:
                     msg = f"Error loading external tileset: {resolved_path}"
                     logger.error(msg)
-                    raise Exception(msg) from io
+                    raise ParseError(msg) from e
             else:
                 msg = f"Found external tileset, but cannot handle type: {self.source}"
                 logger.error(msg)
-                raise Exception(msg)
+                raise ValueError(msg)
 
         self._set_properties(node)
         logger.debug(

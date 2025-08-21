@@ -34,10 +34,10 @@ from operator import attrgetter
 from typing import Optional
 from xml.etree import ElementTree
 
-from .class_type import TiledClassType
 
 # --- internal imports -------------------------------------------------------
 from .constants import GID_TRANS_ROT, MapPoint, TileFlags
+from .class_type import TiledClassType
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
 from .image_layer import TiledImageLayer
@@ -139,7 +139,7 @@ class TiledMap(TiledElement):
             try:
                 with open(custom_property_filename) as f:
                     self.parse_json(json.load(f))
-            except Exception as e:
+            except (OSError, json.JSONDecodeError) as e:
                 logger.error(
                     f"Error loading custom property file: {custom_property_filename}"
                 )
@@ -149,7 +149,7 @@ class TiledMap(TiledElement):
             try:
                 root_node = ElementTree.parse(self.filename).getroot()
                 self.parse_xml(root_node)
-            except Exception as e:
+            except (OSError, ElementTree.ParseError) as e:
                 logger.error(f"Error loading map file: {self.filename}")
                 raise e
 
@@ -457,7 +457,7 @@ class TiledMap(TiledElement):
         except (IndexError, ValueError):
             msg = f"Coords: ({x},{y}) in layer {layer} is invalid."
             logger.debug(msg)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         else:
             try:
@@ -465,7 +465,7 @@ class TiledMap(TiledElement):
             except (IndexError, ValueError):
                 msg = f"Coords: ({x},{y}) in layer {layer} has invalid GID: {gid}"
                 logger.debug(msg)
-                raise Exception(msg)
+                raise ValueError(msg)
             except KeyError:
                 return None
 

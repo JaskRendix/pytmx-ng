@@ -131,7 +131,7 @@ def parse_properties(node: ElementTree.Element, customs: Optional[dict] = None) 
             try:
                 if "type" in subnode.keys():
                     cls = prop_type[subnode.get("type")]
-            except Exception:
+            except KeyError:
                 logger.info(
                     f"Type {subnode.get('type')} not a built-in type. Defaulting to string-cast."
                 )
