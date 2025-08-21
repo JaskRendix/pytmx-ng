@@ -19,6 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled property model.
 """
 
+from typing import Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -37,5 +38,11 @@ class TiledProperty(TiledElement):
 
         self.parse_xml(node)
 
-    def parse_xml(self, node: ElementTree.Element) -> None:
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledProperty layer from ElementTree xml node.
+
+        Returns:
+            TiledProperty: The parsed TiledProperty layer.
+        """
         pass

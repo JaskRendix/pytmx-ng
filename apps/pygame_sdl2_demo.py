@@ -28,7 +28,7 @@ class GameContext:
     renderer: Renderer
 
 
-class TiledRenderer(object):
+class TiledRenderer:
     """
     Super simple way to render a tiled map
     """

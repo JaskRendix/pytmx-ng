@@ -17,6 +17,7 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from typing import Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -54,8 +55,13 @@ class TiledImageLayer(TiledElement):
             return self.parent.images[self.gid]
         return None
 
-    def parse_xml(self, node: ElementTree.Element):
-        """Parse an Image Layer from ElementTree xml node."""
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledImageLayer layer from ElementTree xml node.
+
+        Returns:
+            TiledImageLayer: The parsed TiledImageLayer layer.
+        """
         self._set_properties(node)
         self.name = node.get("name", None)
         self.opacity = node.get("opacity", self.opacity)

@@ -19,6 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 
+from typing import Self
 from xml.etree import ElementTree
 
 from .constants import Point
@@ -66,14 +67,12 @@ class TiledObject(TiledElement):
             return self.parent.images[self.gid]
         return None
 
-    def parse_xml(self, node: ElementTree.Element) -> "TiledObject":
-        """Parse an Object from ElementTree xml node.
-
-        Args:
-            node (ElementTree.Element): The node to be parsed.
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledObject layer from ElementTree xml node.
 
         Returns:
-            TiledObject: The parsed xml node.
+            TiledObject: The parsed TiledObject layer.
         """
 
         def read_points(text) -> tuple[tuple[float, float]]:

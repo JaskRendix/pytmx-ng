@@ -20,7 +20,8 @@ Tiled tile layer model and parser.
 """
 
 import logging
-from typing import Iterable
+from collections.abc import Iterable
+from typing import Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -84,14 +85,12 @@ class TiledTileLayer(TiledElement):
         self.height = int(self.height)
         self.width = int(self.width)
 
-    def parse_xml(self, node: ElementTree.Element) -> "TiledTileLayer":
-        """Parse a Tile Layer from ElementTree xml node.
-
-        Args:
-            node (ElementTree.Element): Node to parse.
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledTileLayer layer from ElementTree xml node.
 
         Returns:
-            TiledTileLayer: The parsed tile layer.
+            TiledTileLayer: The parsed TiledTileLayer layer.
         """
         self._set_properties(node)
         data_node = node.find("data")

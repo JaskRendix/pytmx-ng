@@ -21,6 +21,7 @@ Tiled Tileset parser and model.
 
 import logging
 import os
+from typing import Self
 from xml.etree import ElementTree
 
 from .constants import AnimationFrame
@@ -49,6 +50,7 @@ class TiledTileset(TiledElement):
         TiledElement.__init__(self)
         self.parent = parent
         self.offset = (0, 0)
+        self.tileset_source = None
 
         # defaults from the specification
         self.firstgid = 0
@@ -73,7 +75,9 @@ class TiledTileset(TiledElement):
         Resolve a path relative to either the TMX or TSX file, but keep it relative.
         """
         base = os.path.dirname(
-            self.source if relative_to_source and self.source else self.parent.filename
+            self.tileset_source
+            if relative_to_source and self.tileset_source
+            else self.parent.filename
         )
         resolved = os.path.join(base, path)
         logger.debug(f"Resolved path: {resolved}")
@@ -104,14 +108,19 @@ class TiledTileset(TiledElement):
             )
         return frames
 
-    def parse_xml(self, node: ElementTree.Element) -> "TiledTileset":
-        """Parse a Tileset from an ElementTree xml element."""
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledTileset layer from ElementTree xml node.
+
+        Returns:
+            TiledTileset: The parsed TiledTileset layer.
+        """
         logger.debug("Starting XML parsing for tileset")
 
         source = node.get("source", None)
         if source:
             if source[-4:].lower() == ".tsx":
-                self.source = source
+                self.tileset_source = source
                 self.firstgid = int(node.get("firstgid"))
                 logger.debug(
                     f"External tileset detected: {source}, firstgid={self.firstgid}"
@@ -192,7 +201,7 @@ class TiledTileset(TiledElement):
         image_node = node.find("image")
         if image_node is not None:
             self.source = image_node.get("source")
-            if source:
+            if self.tileset_source:
                 self.source = self._resolve_path(self.source, relative_to_source=True)
             self.trans = image_node.get("trans", None)
             self.width = int(image_node.get("width"))
