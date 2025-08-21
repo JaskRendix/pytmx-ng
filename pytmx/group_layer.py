@@ -18,8 +18,11 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Tiled group layer model and parser.
 """
+
 from xml.etree import ElementTree
+
 from .element import TiledElement
+
 
 class TiledGroupLayer(TiledElement):
     def __init__(self, parent, node: ElementTree.Element) -> None:
@@ -28,7 +31,6 @@ class TiledGroupLayer(TiledElement):
         Args:
             parent (???): ???.
             node (ElementTree.Element): ???.
-
         """
         super().__init__()
         self.parent = parent
@@ -45,7 +47,6 @@ class TiledGroupLayer(TiledElement):
 
         Returns:
             TiledGroupLayer: The parsed TiledGroup layer.
-
         """
         self._set_properties(node)
         self.name = node.get("name", None)

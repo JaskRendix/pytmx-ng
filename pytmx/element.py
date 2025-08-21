@@ -18,12 +18,16 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Base element types shared by pytmx models.
 """
+
+from collections.abc import Iterable
 from logging import getLogger
-from typing import Self, Iterable, Tuple, Any
+from typing import Any, Iterable, Self
 from xml.etree import ElementTree
+
 from .properties import parse_properties, types
 
 logger = getLogger(__name__)
+
 
 class TiledElement:
     """Base class for all pytmx types."""
@@ -37,7 +41,6 @@ class TiledElement:
         # to override this can still set the class attribute explicitly.
         TiledElement.allow_duplicate_names = False
         self.properties = dict()
-        
 
     @classmethod
     def from_xml_string(cls, xml_string: str) -> Self:
@@ -48,32 +51,31 @@ class TiledElement:
 
         Returns:
             TiledElement: The TiledElement from the xml string.
-
         """
         return cls().parse_xml(ElementTree.fromstring(xml_string))
 
-    def _cast_and_set_attributes_from_node_items(self, items: Iterable[Tuple[str, Any]]) -> None:
+    def _cast_and_set_attributes_from_node_items(
+        self, items: Iterable[tuple[str, Any]]
+    ) -> None:
         """
         Cast and set attributes from node items.
 
         Args:
-            items (Iterable[Tuple[str, Any]]): The node items to cast and set.
-
+            items (Iterable[tuple[str, Any]]): The node items to cast and set.
         """
         for key, value in items:
             casted_value = types[key](value)
             setattr(self, key, casted_value)
 
-    def _contains_invalid_property_name(self, items: Iterable[Tuple[str, Any]]) -> bool:
+    def _contains_invalid_property_name(self, items: Iterable[tuple[str, Any]]) -> bool:
         """
         Check if the properties contain invalid property names.
 
         Args:
-            items (Iterable[Tuple[str, Any]]): The properties to check.
+            items (Iterable[tuple[str, Any]]): The properties to check.
 
         Returns:
             bool: True if the properties contain invalid property names, False otherwise.
-
         """
         if self.allow_duplicate_names:
             return False
@@ -93,11 +95,12 @@ class TiledElement:
         Reads the xml attributes and Tiled "properties" from an XML node and fills
         in the values into the object's dictionary. Names will be checked to
         make sure that they do not conflict with reserved names.
-
         """
         self._cast_and_set_attributes_from_node_items(node.items())
         properties = parse_properties(node, customs)
-        if not self.allow_duplicate_names and self._contains_invalid_property_name(properties.items()):
+        if not self.allow_duplicate_names and self._contains_invalid_property_name(
+            properties.items()
+        ):
             logger.error("Some names are reserved for objects and cannot be used.")
             raise ValueError(
                 "Reserved names and duplicate names are not allowed. Please rename your property inside the .tmx file"
@@ -119,4 +122,3 @@ class TiledElement:
             return f'<{self.__class__.__name__}[{self.id}]: "{self.name}">'
         else:
             return f'<{self.__class__.__name__}: "{self.name}">'
-

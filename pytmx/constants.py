@@ -23,6 +23,7 @@ so they can be reused across the package without circular imports.
 
 All symbols here are intentionally dependency-free.
 """
+
 from __future__ import annotations
 
 from collections import namedtuple
@@ -30,6 +31,7 @@ from typing import Union
 
 try:
     import pygame
+
     HAS_PYGAME = True
 except ImportError:
     HAS_PYGAME = False
@@ -53,6 +55,7 @@ flag_names = ("flipped_horizontally", "flipped_vertically", "flipped_diagonally"
 AnimationFrame = namedtuple("AnimationFrame", ["gid", "duration"])  # (int, int)
 Point = namedtuple("Point", ["x", "y"])  # (float, float) in practice
 TileFlags = namedtuple("TileFlags", flag_names)  # (bool, bool, bool)
+flag_cache: dict[int, TileFlags] = {}
 
 # Commonly reused values
 empty_flags = TileFlags(False, False, False)

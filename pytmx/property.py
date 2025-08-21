@@ -20,6 +20,7 @@ Tiled property model.
 """
 
 from xml.etree import ElementTree
+
 from .element import TiledElement
 
 

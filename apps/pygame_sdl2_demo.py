@@ -15,8 +15,8 @@ import pygame
 from pygame._sdl2 import Renderer, Window
 from pygame.locals import *
 
-import pytmx
-from pytmx import TiledTileLayer
+from pytmx import __version__
+from pytmx.layer import TiledTileLayer
 from pytmx.util_pygame_sdl2 import load_pygame_sdl2
 
 logger = logging.getLogger(__name__)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     ctx = GameContext(window, renderer)
 
     logging.basicConfig(level=logging.DEBUG)
-    logger.info(pytmx.__version__)
+    logger.info(__version__)
 
     # loop through a bunch of maps in the maps folder
     try:

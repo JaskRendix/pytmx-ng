@@ -22,13 +22,14 @@ This module provides the casting maps used to coerce XML attribute strings
 into appropriate Python types, and the `parse_properties` function that
 reads Tiled custom properties.
 """
+
 from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from copy import deepcopy
 from typing import Optional
 from xml.etree import ElementTree
-from copy import deepcopy
 
 from .utils import convert_to_bool
 
@@ -96,9 +97,11 @@ types.update(
     }
 )
 
+
 def resolve_to_class(value: str, custom_types: dict):
     """Convert Tiled custom type name to its defined Python object copy."""
     return deepcopy(custom_types[value])
+
 
 # casting for properties type
 prop_type = {
@@ -129,7 +132,9 @@ def parse_properties(node: ElementTree.Element, customs: Optional[dict] = None) 
                 if "type" in subnode.keys():
                     cls = prop_type[subnode.get("type")]
             except Exception:
-                logger.info(f"Type {subnode.get('type')} not a built-in type. Defaulting to string-cast.")
+                logger.info(
+                    f"Type {subnode.get('type')} not a built-in type. Defaulting to string-cast."
+                )
 
             if "class" == subnode.get("type"):
                 new = resolve_to_class(subnode.get("propertytype"), customs or {})

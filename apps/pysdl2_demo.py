@@ -13,6 +13,7 @@ for information on that process.
 
 Notice: slow!  no transparency!  no tile rotation!
 """
+
 import logging
 
 logger = logging.getLogger(__name__)
