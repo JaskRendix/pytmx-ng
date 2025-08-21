@@ -27,7 +27,9 @@ from pathlib import Path
 import pygame
 from pygame.locals import *
 
-from pytmx import *
+from pytmx.image_layer import TiledImageLayer
+from pytmx.layer import TiledTileLayer
+from pytmx.object_group import TiledObjectGroup
 from pytmx.util_pygame import load_pygame
 
 # Logging setup

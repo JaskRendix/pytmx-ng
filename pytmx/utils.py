@@ -21,6 +21,7 @@ Utility functions for pytmx.
 This module contains helper functions that are independent of the core
 classes and can be reused across the package.
 """
+
 from __future__ import annotations
 
 import gzip
@@ -28,7 +29,6 @@ import struct
 import zlib
 from base64 import b64decode
 from collections.abc import Sequence
-from copy import deepcopy
 from math import cos, radians, sin
 from typing import Optional, Union
 
@@ -39,6 +39,8 @@ from .constants import (
     GID_TRANS_ROT,
     Point,
     TileFlags,
+    empty_flags,
+    flag_cache,
 )
 
 
@@ -60,15 +62,20 @@ def default_image_loader(filename: str, flags, **kwargs):
 def decode_gid(raw_gid: int) -> tuple[int, TileFlags]:
     """Decode a GID from TMX data into a base GID and its transform flags."""
     if raw_gid < GID_TRANS_ROT:
-        return raw_gid, TileFlags(False, False, False)
-    return (
-        raw_gid & ~GID_MASK,
-        TileFlags(
-            raw_gid & GID_TRANS_FLIPX == GID_TRANS_FLIPX,
-            raw_gid & GID_TRANS_FLIPY == GID_TRANS_FLIPY,
-            raw_gid & GID_TRANS_ROT == GID_TRANS_ROT,
-        ),
+        return raw_gid, empty_flags
+
+    # Check if the GID is already in the cache
+    if raw_gid in flag_cache:
+        return raw_gid & ~GID_MASK, flag_cache[raw_gid]
+
+    # Calculate and cache the flags
+    flags = TileFlags(
+        raw_gid & GID_TRANS_FLIPX == GID_TRANS_FLIPX,
+        raw_gid & GID_TRANS_FLIPY == GID_TRANS_FLIPY,
+        raw_gid & GID_TRANS_ROT == GID_TRANS_ROT,
     )
+    flag_cache[raw_gid] = flags
+    return raw_gid & ~GID_MASK, flags
 
 
 def reshape_data(gids: list[int], width: int) -> list[list[int]]:
@@ -93,6 +100,8 @@ def unpack_gids(
         fmt = "<%dL" % (len(data) // 4)
         return list(struct.unpack(fmt, data))
     elif encoding == "csv":
+        if not text.strip():
+            return []
         return [int(i) for i in text.split(",")]
     elif encoding:
         raise ValueError(f"layer encoding {encoding} is not supported.")

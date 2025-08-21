@@ -21,8 +21,10 @@ from pathlib import Path
 import pygame
 from pygame.locals import *
 
-import pytmx
-from pytmx import TiledImageLayer, TiledObjectGroup, TiledTileLayer
+from pytmx import __version__
+from pytmx.image_layer import TiledImageLayer
+from pytmx.layer import TiledTileLayer
+from pytmx.object_group import TiledObjectGroup
 from pytmx.util_pygame import load_pygame
 
 logger = logging.getLogger(__name__)
@@ -234,7 +236,7 @@ if __name__ == "__main__":
     pygame.display.set_caption("PyTMX Map Viewer")
     logging.basicConfig(level=logging.DEBUG)
 
-    logger.info(pytmx.__version__)
+    logger.info(__version__)
 
     # loop through a bunch of maps in the maps folder
     try:

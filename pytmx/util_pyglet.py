@@ -29,8 +29,8 @@ except ImportError:
     logger.error("cannot import pyglet (is it installed?)")
     raise
 
-from .map import TiledMap
 from .constants import ColorLike, TileFlags
+from .map import TiledMap
 
 
 def pyglet_image_loader(

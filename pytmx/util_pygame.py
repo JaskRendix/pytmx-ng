@@ -22,7 +22,7 @@ import logging
 from collections.abc import Callable
 from typing import Any, Optional, Union
 
-from .constants import TileFlags, ColorLike, PointLike
+from .constants import ColorLike, PointLike, TileFlags
 from .map import TiledMap
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,6 @@ except ImportError:
     raise
 
 __all__ = ["load_pygame", "pygame_image_loader", "simplify", "build_rects"]
-
 
 
 def handle_transformation(tile: pygame.Surface, flags: TileFlags) -> pygame.Surface:
@@ -165,6 +164,8 @@ def pygame_image_loader(
     Returns:
         function to load tile images
     """
+    pixelalpha = kwargs.get("pixelalpha", False)
+
     if colorkey:
         if isinstance(colorkey, str):
             if not colorkey.startswith("#") and len(colorkey) in (6, 8):
@@ -201,9 +202,7 @@ def pygame_image_loader(
     return load_image
 
 
-
 def load_pygame(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
-
     """Load a TMX file, images, and return a TiledMap class
 
     PYGAME USERS: Use me.
@@ -232,7 +231,12 @@ def load_pygame(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
     return TiledMap(filename, *args, **kwargs)
 
 
-def build_rects(tmxmap: TiledMap, layer: Union[int, str], tileset: Optional[Union[int, str]], real_gid: Optional[int]) -> list[pygame.Rect]:
+def build_rects(
+    tmxmap: TiledMap,
+    layer: Union[int, str],
+    tileset: Optional[Union[int, str]],
+    real_gid: Optional[int],
+) -> list[pygame.Rect]:
     """
     Generate a set of non-overlapping rects that represents the distribution of the specified gid.
 

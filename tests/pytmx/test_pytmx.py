@@ -1,7 +1,15 @@
+import logging
 import unittest
 
-import pytmx
-from pytmx import TiledElement, convert_to_bool
+from pytmx.element import TiledElement
+from pytmx.map import TiledMap
+from pytmx.utils import convert_to_bool
+
+# Tiled gid flags
+GID_TRANS_FLIPX = 1 << 31
+GID_TRANS_FLIPY = 1 << 30
+GID_TRANS_ROT = 1 << 29
+GID_MASK = GID_TRANS_FLIPX | GID_TRANS_FLIPY | GID_TRANS_ROT
 
 
 class TestConvertToBool(unittest.TestCase):
@@ -64,12 +72,21 @@ class TestConvertToBool(unittest.TestCase):
         with self.assertRaises(ValueError):
             convert_to_bool("200")
 
+    def test_edge_cases(self):
+        # Whitespace
+        self.assertTrue(convert_to_bool("  t  "))
+        self.assertFalse(convert_to_bool("  f  "))
+
+        # Numeric edge cases
+        self.assertTrue(convert_to_bool(1e-10))  # Very small positive number
+        self.assertFalse(convert_to_bool(-1e-10))  # Very small negative number
+
 
 class TiledMapTest(unittest.TestCase):
     filename = "tests/resources/test01.tmx"
 
     def setUp(self) -> None:
-        self.m = pytmx.TiledMap(self.filename)
+        self.m = TiledMap(self.filename)
 
     def test_build_rects(self) -> None:
         try:
@@ -86,16 +103,16 @@ class TiledMapTest(unittest.TestCase):
         image = self.m.get_tile_image(0, 0, 0)
 
     def test_get_tile_image_by_gid(self) -> None:
-        image = self.m.get_tile_image_by_gid(0)
+        image = self.m.get_tile_image_by_gid(0, 0, 0, 0)
         self.assertIsNone(image)
 
-        image = self.m.get_tile_image_by_gid(1)
+        image = self.m.get_tile_image_by_gid(1, 1, 1, 1)
         self.assertIsNotNone(image)
 
     def test_reserved_names_check_disabled_with_option(self) -> None:
-        pytmx.TiledElement.allow_duplicate_names = False
-        pytmx.TiledMap(allow_duplicate_names=True)
-        self.assertTrue(pytmx.TiledElement.allow_duplicate_names)
+        TiledElement.allow_duplicate_names = False
+        TiledMap(allow_duplicate_names=True)
+        self.assertTrue(TiledElement.allow_duplicate_names)
 
     def test_map_width_height_is_int(self) -> None:
         self.assertIsInstance(self.m.width, int)
@@ -138,10 +155,12 @@ class TiledElementTestCase(unittest.TestCase):
         specification.  We check that new properties are not named same
         as existing attributes.
         """
+        logging.disable(logging.CRITICAL)  # disable logging
         self.element.name = "foo"
         items = {"name": None}
         result = self.element._contains_invalid_property_name(items.items())
         self.assertTrue(result)
+        logging.disable(logging.NOTSET)  # reset logging
 
     def test_not_contains_reserved_property_name(self) -> None:
         """Reserved names are checked from any attributes in the instance
@@ -161,7 +180,7 @@ class TiledElementTestCase(unittest.TestCase):
 
         Check that passing an option will disable the check
         """
-        pytmx.TiledElement.allow_duplicate_names = True
+        TiledElement.allow_duplicate_names = True
         self.element.name = "foo"
         items = {"name": None}
         result = self.element._contains_invalid_property_name(items.items())

@@ -18,18 +18,19 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 Tiled object model and parser.
 """
+
 from xml.etree import ElementTree
 
-from .element import TiledElement
 from .constants import Point
+from .element import TiledElement
 from .utils import rotate
 
 
 class TiledObject(TiledElement):
-    """Represents any Tiled Object.
+    """
+    Represents any Tiled Object.
 
     Supported types: Box, Ellipse, Tile Object, Polyline, Polygon, Text, Point.
-
     """
 
     def __init__(self, parent, node, custom_types) -> None:
@@ -60,7 +61,6 @@ class TiledObject(TiledElement):
 
         Returns:
             ???: The image object type will depend on the loader (ie. pygame.Surface).
-
         """
         if self.gid:
             return self.parent.images[self.gid]
@@ -74,69 +74,71 @@ class TiledObject(TiledElement):
 
         Returns:
             TiledObject: The parsed xml node.
-
         """
 
         def read_points(text) -> tuple[tuple[float, float]]:
-            """
-            Parse a text string of float tuples and return [(x,...),...]
-
-            """
+            """Parse a text string of float tuples and return [(x,...),...]"""
             return tuple(tuple(map(float, i.split(","))) for i in text.split())
 
         self._set_properties(node, self.custom_types)
 
-        # correctly handle "tile objects" (object with gid set)
+        # Handle tile objects
         if self.gid:
-            self.object_type = "tile"  # set the object type to tile
+            self.object_type = "tile"
             self.gid = self.parent.register_gid_check_flags(self.gid)
 
         points = None
-        polygon = node.find("polygon")
-        if polygon is not None:
-            self.object_type = "polygon"
-            points = read_points(polygon.get("points"))
-            self.closed = True
+        node_handlers = {
+            "polygon": {
+                "type": "polygon",
+                "points_attr": "points",
+                "parse": read_points,
+                "closed": True,
+            },
+            "polyline": {
+                "type": "polyline",
+                "points_attr": "points",
+                "parse": read_points,
+                "closed": False,
+            },
+            "ellipse": {"type": "ellipse"},
+            "point": {"type": "point"},
+            "text": {"type": "text"},
+        }
 
-        polyline = node.find("polyline")
-        if polyline is not None:
-            self.object_type = "polyline"
-            points = read_points(polyline.get("points"))
-            self.closed = False
+        for node_name, handler in node_handlers.items():
+            subnode = node.find(node_name)
+            if subnode is not None:
+                self.object_type = handler["type"]
 
-        ellipse = node.find("ellipse")
-        if ellipse is not None:
-            self.object_type = "ellipse"
+                if node_name == "text":
+                    # Inline text property parsing
+                    setattr(self, "text", subnode.text)
+                    setattr(
+                        self, "font_family", subnode.get("fontfamily", "Sans Serif")
+                    )
+                    setattr(self, "pixel_size", int(subnode.get("pixelsize", 16)))
+                    setattr(self, "wrap", bool(subnode.get("wrap", False)))
+                    setattr(self, "bold", bool(subnode.get("bold", False)))
+                    setattr(self, "italic", bool(subnode.get("italic", False)))
+                    setattr(self, "underline", bool(subnode.get("underline", False)))
+                    setattr(self, "strike_out", bool(subnode.get("strikeout", False)))
+                    setattr(self, "kerning", bool(subnode.get("kerning", True)))
+                    setattr(self, "h_align", subnode.get("halign", "left"))
+                    setattr(self, "v_align", subnode.get("valign", "top"))
+                    setattr(self, "color", subnode.get("color", "#000000FF"))
 
-        point = node.find("point")
-        if point is not None:
-            self.object_type = "point"
-
-        text = node.find("text")
-        if text is not None:
-            self.object_type = "text"
-            # NOTE: The defaults have been taken from the tiled editor version 1.11.0
-            self.text = text.text
-            self.font_family = text.get("fontfamily", "Sans Serif")
-            # Not sure if this is really font size or not, but it's called
-            # pixel size in the .tmx file.
-            self.pixel_size = int(text.get("pixelsize", 16))
-            self.wrap = bool(text.get("wrap", False))
-            self.bold = bool(text.get("bold", False))
-            self.italic = bool(text.get("italic", False))
-            self.underline = bool(text.get("underline", False))
-            self.strike_out = bool(text.get("strikeout", False))
-            self.kerning = bool(text.get("kerning", True))
-            self.h_align = text.get("halign", "left")
-            self.v_align = text.get("valign", "top")
-            self.color = text.get("color", "#000000FF")
+                if "points_attr" in handler:
+                    points = handler["parse"](subnode.get(handler["points_attr"]))
+                if "closed" in handler:
+                    self.closed = handler["closed"]
+                break
 
         if points:
             xs, ys = zip(*points)
             self.width = max(xs) - min(xs)
             self.height = max(ys) - min(ys)
             self.points = tuple([Point(i[0] + self.x, i[1] + self.y) for i in points])
-        # Set the points for a rectangle
         elif self.object_type == "rectangle":
             self.points = tuple(
                 [
@@ -167,4 +169,3 @@ class TiledObject(TiledElement):
                 (self.x + self.width, self.y),
             ]
         ]
-

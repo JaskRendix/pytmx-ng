@@ -45,7 +45,6 @@ class TiledTileset(TiledElement):
         Args:
             parent (???): ???.
             node (ElementTree.Element): ???.
-
         """
         TiledElement.__init__(self)
         self.parent = parent

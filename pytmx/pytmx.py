@@ -18,19 +18,19 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 
-from .constants import TileFlags
-from .properties import parse_properties, resolve_to_class
-from .utils import convert_to_bool
 from .class_type import TiledClassType
+from .constants import TileFlags
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
 from .image_layer import TiledImageLayer
 from .map import TiledMap
 from .object import TiledObject
 from .object_group import TiledObjectGroup
+from .properties import parse_properties, resolve_to_class
 from .property import TiledProperty
 from .tile_layer import TiledTileLayer
 from .tileset import TiledTileset
+from .utils import convert_to_bool, decode_gid, unpack_gids
 
 __all__ = (
     "TileFlags",
@@ -47,4 +47,6 @@ __all__ = (
     "convert_to_bool",
     "resolve_to_class",
     "parse_properties",
+    "decode_gid",
+    "unpack_gids",
 )
