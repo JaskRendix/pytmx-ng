@@ -17,21 +17,23 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
+
+if TYPE_CHECKING:
+    from .map import TiledMap
 
 
 class TiledImageLayer(TiledElement):
     """Represents Tiled Image Layer.
 
     The image associated with this layer will be loaded and assigned a GID.
-
     """
 
-    def __init__(self, parent, node: ElementTree.Element) -> None:
-        TiledElement.__init__(self)
+    def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
+        super().__init__()
         self.parent = parent
         self.source = None
         self.trans = None

@@ -55,7 +55,10 @@ def pysdl2_image_loader(
         sdl2.SDL_FreeSurface(surface)
         return texture_
 
-    def load_image(rect: Optional[tuple[int, int, int, int]] = None, flags: Optional[TileFlags] = None) -> Any:
+    def load_image(
+        rect: Optional[tuple[int, int, int, int]] = None,
+        flags: Optional[TileFlags] = None,
+    ) -> Any:
         if rect:
             try:
                 flip = 0
@@ -87,6 +90,8 @@ def pysdl2_image_loader(
     return load_image
 
 
-def load_pysdl2(renderer: sdl2.SDL_Renderer, filename: str, *args: Any, **kwargs: Any) -> TiledMap:
+def load_pysdl2(
+    renderer: sdl2.SDL_Renderer, filename: str, *args: Any, **kwargs: Any
+) -> TiledMap:
     kwargs["image_loader"] = partial(pysdl2_image_loader, renderer)
     return TiledMap(filename, *args, **kwargs)

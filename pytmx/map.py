@@ -31,13 +31,13 @@ from collections.abc import Iterable
 from itertools import chain, product
 from logging import getLogger
 from operator import attrgetter
-from typing import Any, Optional, Self, Iterator
+from typing import Any, Iterator, Optional, Self
 from xml.etree import ElementTree
 
+from .class_type import TiledClassType
 
 # --- internal imports -------------------------------------------------------
 from .constants import GID_TRANS_ROT, MapPoint, TileFlags
-from .class_type import TiledClassType
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
 from .image_layer import TiledImageLayer
@@ -62,7 +62,7 @@ class TiledMap(TiledElement):
         optional_gids: Optional[set[int]] = set(),
         load_all_tiles: Optional[bool] = True,
         invert_y: Optional[bool] = True,
-        allow_duplicate_names: Optional[bool] = False,
+        allow_duplicate_names: bool = False,
     ) -> None:
         """Load new Tiled map from a .tmx file.
 
@@ -74,7 +74,10 @@ class TiledMap(TiledElement):
             load_all_tiles (bool): Load all tile images, even if never used.
             allow_duplicate_names (bool): Allow duplicates in objects' metadata.
         """
-        super().__init__()
+        # allow duplicate names to be parsed and loaded
+        # honor explicit constructor argument (do not read from kwargs here)
+        super().__init__(allow_duplicate_names=allow_duplicate_names)
+
         self.filename = filename
         self.custom_property_filename = custom_property_filename
         self.image_loader = image_loader
@@ -84,12 +87,6 @@ class TiledMap(TiledElement):
         self.load_all_tiles = load_all_tiles
         self.invert_y = invert_y
 
-        # allow duplicate names to be parsed and loaded
-        # honor explicit constructor argument (do not read from kwargs here)
-        self.allow_duplicate_names = allow_duplicate_names
-        # also set the class-level flag used by TiledElement validation logic
-        TiledElement.allow_duplicate_names = self.allow_duplicate_names
-
         # all layers in proper order
         self.layers: list[TiledLayer] = []
         # TiledTileset objects
@@ -98,7 +95,7 @@ class TiledMap(TiledElement):
         self.tile_properties: dict[int, dict[str, str]] = {}
         self.layernames: dict[str, TiledLayer] = {}
         self.objects_by_id: dict[str, TiledObject] = {}
-        self.objects_by_name: dict[int, TiledObject] = {}
+        self.objects_by_name: dict[str, TiledObject] = {}
 
         # only used tiles are actually loaded, so there will be a difference
         # between the GIDs in the Tiled map data (tmx) and the data in this
@@ -161,7 +158,7 @@ class TiledMap(TiledElement):
         return chain(self.layers, self.objects)
 
     def _set_properties(self, node: ElementTree.Element) -> None:
-        TiledElement._set_properties(self, node)
+        super()._set_properties(node)
 
         # TODO: make class/layer-specific type casting
         # layer height and width must be int, but TiledElement.set_properties()
@@ -508,7 +505,9 @@ class TiledMap(TiledElement):
         """
         self.tile_properties[gid] = properties
 
-    def get_tile_properties_by_layer(self, layer: int) -> Iterator[tuple[int, dict[str, Any]]]:
+    def get_tile_properties_by_layer(
+        self, layer: int
+    ) -> Iterator[tuple[int, dict[str, Any]]]:
         """Get the tile properties of each GID in layer.
 
         Args:

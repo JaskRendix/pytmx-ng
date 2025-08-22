@@ -24,14 +24,14 @@ classes and can be reused across the package.
 
 from __future__ import annotations
 
+import gzip
+import struct
+import zlib
 from base64 import b64decode
 from collections.abc import Sequence
-import gzip
 from logging import getLogger
 from math import cos, radians, sin
-import struct
 from typing import Optional, Union
-import zlib
 
 logger = getLogger(__name__)
 

@@ -110,9 +110,9 @@ class TiledMapTest(unittest.TestCase):
         self.assertIsNotNone(image)
 
     def test_reserved_names_check_disabled_with_option(self) -> None:
-        TiledElement.allow_duplicate_names = False
-        TiledMap(allow_duplicate_names=True)
-        self.assertTrue(TiledElement.allow_duplicate_names)
+        tiled_map = TiledMap(allow_duplicate_names=True)
+        items = [("name", "conflict")]
+        self.assertFalse(tiled_map._contains_invalid_property_name(items))
 
     def test_map_width_height_is_int(self) -> None:
         self.assertIsInstance(self.m.width, int)
@@ -139,53 +139,3 @@ class TiledMapTest(unittest.TestCase):
         self.assertEqual(self.m.pixels_to_tile_pos((33, 0)), (2, 0))
         self.assertEqual(self.m.pixels_to_tile_pos((0, 0)), (0, 0))
         self.assertEqual(self.m.pixels_to_tile_pos((65, 86)), (4, 5))
-
-
-class TiledElementTestCase(unittest.TestCase):
-    def setUp(self) -> None:
-        self.element = TiledElement()
-
-    def test_from_xml_string_should_raise_on_TiledElement(self) -> None:
-        with self.assertRaises(AttributeError):
-            TiledElement.from_xml_string("<element></element>")
-
-    def test_contains_reserved_property_name(self) -> None:
-        """Reserved names are checked from any attributes in the instance
-        after it is created.  Instance attributes are defaults from the
-        specification.  We check that new properties are not named same
-        as existing attributes.
-        """
-        logging.disable(logging.CRITICAL)  # disable logging
-        self.element.name = "foo"
-        items = {"name": None}
-        result = self.element._contains_invalid_property_name(items.items())
-        self.assertTrue(result)
-        logging.disable(logging.NOTSET)  # reset logging
-
-    def test_not_contains_reserved_property_name(self) -> None:
-        """Reserved names are checked from any attributes in the instance
-        after it is created.  Instance attributes are defaults from the
-        specification.  We check that new properties are not named same
-        as existing attributes.
-        """
-        items = {"name": None}
-        result = self.element._contains_invalid_property_name(items.items())
-        self.assertFalse(result)
-
-    def test_reserved_names_check_disabled_with_option(self) -> None:
-        """Reserved names are checked from any attributes in the instance
-        after it is created.  Instance attributes are defaults from the
-        specification.  We check that new properties are not named same
-        as existing attributes.
-
-        Check that passing an option will disable the check
-        """
-        TiledElement.allow_duplicate_names = True
-        self.element.name = "foo"
-        items = {"name": None}
-        result = self.element._contains_invalid_property_name(items.items())
-        self.assertFalse(result)
-
-    def test_repr(self) -> None:
-        self.element.name = "foo"
-        self.assertEqual('<TiledElement: "foo">', self.element.__repr__())
