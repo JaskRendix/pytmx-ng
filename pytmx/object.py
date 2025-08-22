@@ -38,7 +38,7 @@ class TiledObject(TiledElement):
     """
 
     def __init__(
-        self, parent: "TiledMap", node: ElementTree.Element, custom_types
+        self, parent: "TiledMap", node: ElementTree.Element, custom_types: dict[str, Any]
     ) -> None:
         super().__init__()
         self.parent = parent
