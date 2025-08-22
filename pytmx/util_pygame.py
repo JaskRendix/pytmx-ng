@@ -126,7 +126,7 @@ def smart_convert(
     width, height = original.get_size()
     tile = None
 
-    def force_alpha():
+    def force_alpha() -> pygame.Surface:
         return original.convert_alpha()
 
     if colorkey:
@@ -292,7 +292,9 @@ def build_rects(
     elif isinstance(layer, str):
         try:
             # Find the layer with the matching name
-            layer_obj = next((l for l in tmxmap.layers if l.name and l.name == layer), None)
+            layer_obj = next(
+                (l for l in tmxmap.layers if l.name and l.name == layer), None
+            )
         except (AttributeError, TypeError) as e:
             msg = f"Error finding layer: {e}"
             logger.debug(msg)

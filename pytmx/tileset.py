@@ -21,13 +21,17 @@ Tiled Tileset parser and model.
 
 import logging
 import os
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
+
 from .constants import AnimationFrame
 from .element import TiledElement
 from .object_group import TiledObjectGroup
 from .properties import parse_properties, types
+
+if TYPE_CHECKING:
+    from .map import TiledMap
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +41,16 @@ class TiledTileset(TiledElement):
 
     External tilesets are supported.  GID/ID's from Tiled are not
     guaranteed to be the same after loaded.
-
     """
 
-    def __init__(self, parent, node) -> None:
+    def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         """Represents a Tiled Tileset
 
         Args:
             parent (???): ???.
             node (ElementTree.Element): ???.
         """
-        TiledElement.__init__(self)
+        super().__init__()
         self.parent = parent
         self.offset = (0, 0)
         self.tileset_source = None
@@ -92,7 +95,9 @@ class TiledTileset(TiledElement):
         logger.debug(f"Parsed tile properties: {props}")
         return props
 
-    def _parse_animation_frames(self, anim_node: ElementTree.Element) -> list[AnimationFrame]:
+    def _parse_animation_frames(
+        self, anim_node: ElementTree.Element
+    ) -> list[AnimationFrame]:
         """
         Parses animation frames from a tile's animation node.
         """

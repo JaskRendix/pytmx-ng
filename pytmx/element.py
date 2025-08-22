@@ -19,6 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Base element types shared by pytmx models.
 """
 
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from logging import getLogger
 from typing import Any, Iterable, Self
@@ -29,17 +30,22 @@ from .properties import parse_properties, types
 logger = getLogger(__name__)
 
 
-class TiledElement:
+class TiledElement(ABC):
     """Base class for all pytmx types."""
 
-    allow_duplicate_names = False
+    def __init__(self, allow_duplicate_names: bool = False):
+        """
+        Initializes a TiledElement.
 
-    def __init__(self) -> None:
+        Args:
+            allow_duplicate_names: If True, allows Tiled properties
+                to have the same name as class attributes.
+        """
         # Reset the class-level flag on each instantiation to prevent
         # cross-test leakage when some code temporarily mutates the
         # class variable (e.g., via TiledMap kwargs). Tests that need
         # to override this can still set the class attribute explicitly.
-        TiledElement.allow_duplicate_names = False
+        self._allow_duplicate_names = allow_duplicate_names
         self.properties = dict()
 
     @classmethod
@@ -53,6 +59,19 @@ class TiledElement:
             TiledElement: The TiledElement from the xml string.
         """
         return cls().parse_xml(ElementTree.fromstring(xml_string))
+
+    @abstractmethod
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """Parse XML data for this element."""
+        raise NotImplementedError
+
+    @property
+    def allow_duplicate_names(self) -> bool:
+        return self._allow_duplicate_names
+
+    @allow_duplicate_names.setter
+    def allow_duplicate_names(self, value: bool) -> None:
+        self._allow_duplicate_names = value
 
     def _cast_and_set_attributes_from_node_items(
         self, items: Iterable[tuple[str, Any]]
@@ -77,14 +96,14 @@ class TiledElement:
         Returns:
             bool: True if the properties contain invalid property names, False otherwise.
         """
-        if self.allow_duplicate_names:
+        if self._allow_duplicate_names:
             return False
 
         for key, _ in items:
             _hasattr = hasattr(self, key)
 
             if _hasattr:
-                msg = f"Cannot set property '{key}' on {self.__class__.__name__} '{self.name}'; Tiled property already exists."
+                msg = f"Cannot set property '{key}' on {self.__class__.__name__} '{getattr(self, 'name', 'unnamed')}'; Tiled property already exists."
                 logger.error(msg)
                 return True
         return False
@@ -98,7 +117,7 @@ class TiledElement:
         """
         self._cast_and_set_attributes_from_node_items(node.items())
         properties = parse_properties(node, customs)
-        if not self.allow_duplicate_names and self._contains_invalid_property_name(
+        if not self._allow_duplicate_names and self._contains_invalid_property_name(
             properties.items()
         ):
             logger.error("Some names are reserved for objects and cannot be used.")
