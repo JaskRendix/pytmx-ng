@@ -22,7 +22,7 @@ Base element types shared by pytmx models.
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Any, Iterable, Optional, Self
+from typing import Any, Optional, Self
 from xml.etree import ElementTree
 
 from .properties import parse_properties, types
@@ -41,10 +41,6 @@ class TiledElement(ABC):
             allow_duplicate_names: If True, allows Tiled properties
                 to have the same name as class attributes.
         """
-        # Reset the class-level flag on each instantiation to prevent
-        # cross-test leakage when some code temporarily mutates the
-        # class variable (e.g., via TiledMap kwargs). Tests that need
-        # to override this can still set the class attribute explicitly.
         self._allow_duplicate_names = allow_duplicate_names
         self.properties = dict()
 

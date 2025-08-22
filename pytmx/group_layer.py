@@ -33,8 +33,8 @@ class TiledGroupLayer(TiledElement):
         """
 
         Args:
-            parent (???): ???.
-            node (ElementTree.Element): ???.
+            parent (TiledMap): The parent TiledMap.
+            node (ElementTree.Element): The XML node to parse.
         """
         super().__init__()
         self.parent = parent

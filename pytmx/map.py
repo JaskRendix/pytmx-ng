@@ -34,9 +34,9 @@ from operator import attrgetter
 from typing import Any, Iterator, Optional, Self
 from xml.etree import ElementTree
 
-from .class_type import TiledClassType
 
 # --- internal imports -------------------------------------------------------
+from .class_type import TiledClassType
 from .constants import GID_TRANS_ROT, MapPoint, TileFlags
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
@@ -69,7 +69,7 @@ class TiledMap(TiledElement):
         Args:
             filename (Optional[str]): Filename of tiled map to load.
             image_loader (Optional[List[str]]): Function that will load images (see below).
-            optional_gids (???): Load specific tile image GID, even if never used.
+            optional_gids (set[int]): Load specific tile image GID, even if never used.
             invert_y (bool): Invert the y axis.
             load_all_tiles (bool): Load all tile images, even if never used.
             allow_duplicate_names (bool): Allow duplicates in objects' metadata.
