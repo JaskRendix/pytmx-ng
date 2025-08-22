@@ -68,10 +68,11 @@ class TiledMap(TiledElement):
 
         Args:
             filename (Optional[str]): Filename of tiled map to load.
+            custom_property_filename (Optional[list[str]]): Custom property file to load.
             image_loader (Optional[List[str]]): Function that will load images (see below).
             optional_gids (set[int]): Load specific tile image GID, even if never used.
-            invert_y (bool): Invert the y axis.
             load_all_tiles (bool): Load all tile images, even if never used.
+            invert_y (bool): Invert the y axis.
             allow_duplicate_names (bool): Allow duplicates in objects' metadata.
         """
         # allow duplicate names to be parsed and loaded
@@ -350,7 +351,7 @@ class TiledMap(TiledElement):
             layer (int): The layer's number.
 
         Returns:
-            ???: the image object type will depend on the loader (ie. pygame surface).
+            Any: the image object type will depend on the loader (ie. pygame surface).
 
         Raises:
             TypeError: if coordinates are not integers.
@@ -416,7 +417,7 @@ class TiledMap(TiledElement):
             layer (int): The layer's number.
 
         Returns:
-            ???: The image object type will depend on the loader (ie. pygame.Surface).
+            int: The tile GID.
 
         Raises:
             ValueError: If coordinates are out of bounds.
@@ -516,7 +517,7 @@ class TiledMap(TiledElement):
             layer (int): The layer number.
 
         Returns:
-            ???: ???
+            Iterator[Tuple[int, dict[str, Any]]]: Iterator of GID, properties tuples for each tile in the layer.
         """
         try:
             assert int(layer) >= 0
@@ -647,6 +648,14 @@ class TiledMap(TiledElement):
                 yield gid, colliders
 
     def get_tile_flags_by_gid(self, gid: int) -> TileFlags:
+        """Return the tile flags for this GID.
+
+        Args:
+            gid (int): The tile GID.
+
+        Returns:
+            TileFlags: The tile flags.
+        """
         real_gid = self.tiledgidmap[gid]
         flags_list = self.gidmap[real_gid]
         for tile_gid, flags in flags_list:
@@ -654,6 +663,14 @@ class TiledMap(TiledElement):
                 return flags
 
     def pixels_to_tile_pos(self, position: tuple[int, int]) -> tuple[int, int]:
+        """Convert pixel position to tile position.
+
+        Args:
+            position (tuple[int, int]): The pixel position.
+
+        Returns:
+            tuple[int, int]: The tile position.
+        """
         return int(position[0] / self.tilewidth), int(position[1] / self.tileheight)
 
     @property
@@ -661,7 +678,7 @@ class TiledMap(TiledElement):
         """Returns iterator of all object groups.
 
         Returns:
-            Iterable[TiledObjectGroup]: ???.
+            Iterable[TiledObjectGroup]: Iterator of all object groups.
         """
         return (layer for layer in self.layers if isinstance(layer, TiledObjectGroup))
 
@@ -670,7 +687,7 @@ class TiledMap(TiledElement):
         """Returns iterator of all the objects associated with the map.
 
         Returns:
-            Iterable[TiledObject]: All objects associated with the map.
+            Iterable[TiledObject]: Iterator of all objects associated with the map.
         """
         return chain(*self.objectgroups)
 
@@ -715,7 +732,7 @@ class TiledMap(TiledElement):
 
         Args:
             tiled_gid (int): GID that is found in TMX data.
-            flags (???): TileFlags.
+            flags (TileFlags): TileFlags.
 
         Returns:
             int: New or existing GID for pytmx use.
@@ -763,7 +780,7 @@ class TiledMap(TiledElement):
             tiled_gid (int): GID. that is found in the .tmx file data.
 
         Returns:
-            Optional[List[int]]: ???
+            Optional[List[int]]: List of GIDs.
         """
         try:
             return self.gidmap[int(tiled_gid)]

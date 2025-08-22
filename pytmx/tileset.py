@@ -47,8 +47,8 @@ class TiledTileset(TiledElement):
         """Represents a Tiled Tileset
 
         Args:
-            parent (???): ???.
-            node (ElementTree.Element): ???.
+            parent (TiledMap): The parent TiledMap.
+            node (ElementTree.Element): The XML node.
         """
         super().__init__()
         self.parent = parent

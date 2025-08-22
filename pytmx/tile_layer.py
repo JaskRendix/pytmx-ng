@@ -72,7 +72,7 @@ class TiledTileLayer(TiledElement):
         """Yields X, Y, Image tuples for each tile in the layer.
 
         Yields:
-            ???: Iterator of X, Y, Image tuples for each tile in the layer
+            Iterable[Tuple[int, int, Any]]: Iterator of X, Y, Image tuples for each tile in the layer
         """
         images = self.parent.images
         for x, y, gid in [i for i in self.iter_data() if i[2]]:
