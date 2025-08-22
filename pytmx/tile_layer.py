@@ -21,7 +21,7 @@ Tiled tile layer model and parser.
 
 import logging
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Optional, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -78,8 +78,10 @@ class TiledTileLayer(TiledElement):
         for x, y, gid in [i for i in self.iter_data() if i[2]]:
             yield x, y, images[gid]
 
-    def _set_properties(self, node: ElementTree.Element) -> None:
-        super()._set_properties(node)
+    def _set_properties(
+        self, node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+    ) -> None:
+        super()._set_properties(node, customs)
 
         # TODO: make class/layer-specific type casting
         # layer height and width must be int, but TiledElement.set_properties()
