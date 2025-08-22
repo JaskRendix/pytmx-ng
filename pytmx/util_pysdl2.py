@@ -36,11 +36,6 @@ __all__ = [
     "load_pysdl2",
     "pysdl2_image_loader",
 ]
-flag_names = (
-    "flipped_horizontally",
-    "flipped_vertically",
-    "flipped_diagonally",
-)
 
 
 def pysdl2_image_loader(

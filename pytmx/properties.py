@@ -119,7 +119,9 @@ prop_type = {
 }
 
 
-def parse_properties(node: ElementTree.Element, customs: Optional[dict] = None) -> dict:
+def parse_properties(
+    node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+) -> dict[Any, Any]:
     """Parse a Tiled XML node and return a property dict.
 
     This parses `<properties>` children and casts their values according to

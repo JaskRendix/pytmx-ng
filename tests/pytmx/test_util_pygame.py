@@ -404,9 +404,16 @@ class TestHandleTransformation(unittest.TestCase):
     def test_flipped_diagonally_non_square(self):
         non_square_tile = pygame.Surface((32, 64))
         non_square_tile.fill((255, 0, 0))
-        flags = TileFlags(False, False, True)
+        flags = TileFlags(True, False, False)
         with self.assertRaises(ValueError):
             handle_transformation(non_square_tile, flags)
+
+    def test_flipped_diagonally_square(self):
+        square_tile = pygame.Surface((64, 64))
+        square_tile.fill((0, 255, 0))
+        flags = TileFlags(True, False, False)
+        transformed_tile = handle_transformation(square_tile, flags)
+        self.assertEqual(transformed_tile.get_size(), (64, 64))
 
     def test_flipped_horizontally(self):
         flags = TileFlags(True, False, False)

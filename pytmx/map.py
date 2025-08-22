@@ -157,8 +157,10 @@ class TiledMap(TiledElement):
     def __iter__(self) -> Iterator[Self]:
         return chain(self.layers, self.objects)
 
-    def _set_properties(self, node: ElementTree.Element) -> None:
-        super()._set_properties(node)
+    def _set_properties(
+        self, node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+    ) -> None:
+        super()._set_properties(node, customs)
 
         # TODO: make class/layer-specific type casting
         # layer height and width must be int, but TiledElement.set_properties()

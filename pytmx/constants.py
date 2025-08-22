@@ -26,8 +26,7 @@ All symbols here are intentionally dependency-free.
 
 from __future__ import annotations
 
-from collections import namedtuple
-from typing import Union
+from typing import NamedTuple, Union
 
 try:
     import pygame
@@ -49,12 +48,24 @@ GID_TRANS_FLIPY = 1 << 30
 GID_TRANS_ROT = 1 << 29
 GID_MASK = GID_TRANS_FLIPX | GID_TRANS_FLIPY | GID_TRANS_ROT
 
-# --- Lightweight tuples -----------------------------------------------------
-flag_names = ("flipped_horizontally", "flipped_vertically", "flipped_diagonally")
 
-AnimationFrame = namedtuple("AnimationFrame", ["gid", "duration"])  # (int, int)
-Point = namedtuple("Point", ["x", "y"])  # (float, float) in practice
-TileFlags = namedtuple("TileFlags", flag_names)  # (bool, bool, bool)
+# --- Lightweight named tuples -----------------------------------------------------
+class AnimationFrame(NamedTuple):
+    gid: int
+    duration: int
+
+
+class Point(NamedTuple):
+    x: float
+    y: float
+
+
+class TileFlags(NamedTuple):
+    flipped_diagonally: bool
+    flipped_horizontally: bool
+    flipped_vertically: bool
+
+
 flag_cache: dict[int, TileFlags] = {}
 
 # Commonly reused values
