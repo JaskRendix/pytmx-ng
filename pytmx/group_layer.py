@@ -19,14 +19,17 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled group layer model and parser.
 """
 
-from typing import Self
+from typing import TYPE_CHECKING, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
 
+if TYPE_CHECKING:
+    from .map import TiledMap
+
 
 class TiledGroupLayer(TiledElement):
-    def __init__(self, parent, node: ElementTree.Element) -> None:
+    def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         """
 
         Args:

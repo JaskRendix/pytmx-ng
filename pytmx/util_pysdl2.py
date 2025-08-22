@@ -19,6 +19,10 @@ License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
 import logging
 from functools import partial
+from typing import Any, Callable, Optional
+
+from .constants import ColorLike, TileFlags
+from .map import TiledMap
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +31,6 @@ try:
 except ImportError:
     logger.error("cannot import pysdl2 (is it installed?)")
     raise
-
-from .map import TiledMap
 
 __all__ = [
     "load_pysdl2",
@@ -41,14 +43,22 @@ flag_names = (
 )
 
 
-def pysdl2_image_loader(renderer, filename, colorkey, **kwargs):
+def pysdl2_image_loader(
+    renderer: sdl2.SDL_Renderer,
+    filename: str,
+    colorkey: Optional[ColorLike] = None,
+    **kwargs: Any,
+) -> Callable[[Optional[tuple[int, int, int, int]], Optional[TileFlags]], Any]:
     def convert(surface):
         texture_ = sdl2.SDL_CreateTextureFromSurface(renderer.renderer, surface)
         sdl2.SDL_SetTextureBlendMode(texture_, sdl2.SDL_BLENDMODE_BLEND)
         sdl2.SDL_FreeSurface(surface)
         return texture_
 
-    def load_image(rect=None, flags=None):
+    def load_image(
+        rect: Optional[tuple[int, int, int, int]] = None,
+        flags: Optional[TileFlags] = None,
+    ) -> Any:
         if rect:
             try:
                 flip = 0
@@ -80,6 +90,8 @@ def pysdl2_image_loader(renderer, filename, colorkey, **kwargs):
     return load_image
 
 
-def load_pysdl2(renderer, filename, *args, **kwargs) -> TiledMap:
+def load_pysdl2(
+    renderer: sdl2.SDL_Renderer, filename: str, *args: Any, **kwargs: Any
+) -> TiledMap:
     kwargs["image_loader"] = partial(pysdl2_image_loader, renderer)
     return TiledMap(filename, *args, **kwargs)

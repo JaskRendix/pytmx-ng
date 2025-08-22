@@ -19,12 +19,15 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 
-from typing import Self
+from typing import TYPE_CHECKING, Any, Self
 from xml.etree import ElementTree
 
 from .constants import Point
 from .element import TiledElement
 from .utils import rotate
+
+if TYPE_CHECKING:
+    from .map import TiledMap
 
 
 class TiledObject(TiledElement):
@@ -34,8 +37,10 @@ class TiledObject(TiledElement):
     Supported types: Box, Ellipse, Tile Object, Polyline, Polygon, Text, Point.
     """
 
-    def __init__(self, parent, node, custom_types) -> None:
-        TiledElement.__init__(self)
+    def __init__(
+        self, parent: "TiledMap", node: ElementTree.Element, custom_types
+    ) -> None:
+        super().__init__()
         self.parent = parent
 
         # defaults from the specification
@@ -57,11 +62,11 @@ class TiledObject(TiledElement):
         self.parse_xml(node)
 
     @property
-    def image(self):
+    def image(self) -> Any:
         """Image for the object, if assigned.
 
         Returns:
-            ???: The image object type will depend on the loader (ie. pygame.Surface).
+            Any: The image object type will depend on the loader (ie. pygame.Surface).
         """
         if self.gid:
             return self.parent.images[self.gid]

@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from typing import Optional
+from typing import Any, Optional
 from xml.etree import ElementTree
 
 from .utils import convert_to_bool
@@ -98,7 +98,7 @@ types.update(
 )
 
 
-def resolve_to_class(value: str, custom_types: dict):
+def resolve_to_class(value: str, custom_types: dict) -> Any:
     """Convert Tiled custom type name to its defined Python object copy."""
     if value not in custom_types:
         raise ValueError(f"Custom type {value} not found.")

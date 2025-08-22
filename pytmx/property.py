@@ -19,17 +19,20 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled property model.
 """
 
-from typing import Self
+from typing import TYPE_CHECKING, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
+
+if TYPE_CHECKING:
+    from .map import TiledMap
 
 
 class TiledProperty(TiledElement):
     """Represents Tiled Property."""
 
-    def __init__(self, parent, node: ElementTree.Element) -> None:
-        TiledElement.__init__(self)
+    def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
+        super().__init__()
 
         # defaults from the specification
         self.name = None

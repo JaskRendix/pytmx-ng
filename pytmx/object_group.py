@@ -19,22 +19,26 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Object group model and parser.
 """
 
-from typing import Self
+from typing import TYPE_CHECKING, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
 from .object import TiledObject
+
+if TYPE_CHECKING:
+    from .map import TiledMap
 
 
 class TiledObjectGroup(TiledElement, list):
     """Represents a Tiled ObjectGroup
 
     Supports any operation of a normal list.
-
     """
 
-    def __init__(self, parent, node, customs) -> None:
-        TiledElement.__init__(self)
+    def __init__(
+        self, parent: "TiledMap", node: ElementTree.Element, custom_types
+    ) -> None:
+        super().__init__()
         self.parent = parent
 
         # defaults from the specification
@@ -44,7 +48,7 @@ class TiledObjectGroup(TiledElement, list):
         self.visible = 1
         self.offsetx = 0
         self.offsety = 0
-        self.custom_types = customs
+        self.custom_types = custom_types
         self.draworder = "index"
 
         self.parse_xml(node)
