@@ -100,6 +100,8 @@ types.update(
 
 def resolve_to_class(value: str, custom_types: dict) -> Any:
     """Convert Tiled custom type name to its defined Python object copy."""
+    if value not in custom_types:
+        raise ValueError(f"Custom type {value} not found.")
     return deepcopy(custom_types[value])
 
 
