@@ -377,9 +377,9 @@ class TiledMap(TiledElement):
             raise TypeError(msg)
 
         else:
-            return self.get_tile_image_by_gid(gid, x, y, nr_layer)
+            return self.get_tile_image_by_gid(gid)
 
-    def get_tile_image_by_gid(self, gid: int, x: int, y: int, layer: int) -> Any:
+    def get_tile_image_by_gid(self, gid: int) -> Any:
         """
         Return the tile image for this location.
 
@@ -404,7 +404,7 @@ class TiledMap(TiledElement):
         try:
             return self.images[gid]
         except IndexError:
-            msg = f"Coords: ({x},{y}) in layer {layer} has invalid GID: {gid}"
+            msg = f"GID: {gid} not found"
             logger.debug(msg)
             raise ValueError(msg)
 
