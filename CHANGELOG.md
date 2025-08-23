@@ -9,7 +9,7 @@ Semantic Versioning.
 
 Nothing yet.
 
-## [3.34.0] - 2025-08-23
+## [3.34.1] - 2025-08-23
 
 - Closed PRs:
   - #18: Docs — Improve type hints and docstrings across core modules (by @pnearing) — merged 2025-08-22 — https://github.com/pnearing/pytmx-ng/pull/18
