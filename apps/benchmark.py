@@ -17,8 +17,8 @@ Missing interactive_tests:
 
 import os
 
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-os.environ["SDL_AUDIODRIVER"] = "dummy"
+# os.environ["SDL_VIDEODRIVER"] = "dummy"
+# os.environ["SDL_AUDIODRIVER"] = "dummy"
 
 import logging
 import time
