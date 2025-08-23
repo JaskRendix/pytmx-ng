@@ -103,10 +103,10 @@ class TiledMapTest(unittest.TestCase):
         image = self.m.get_tile_image(0, 0, 0)
 
     def test_get_tile_image_by_gid(self) -> None:
-        image = self.m.get_tile_image_by_gid(0, 0, 0, 0)
+        image = self.m.get_tile_image_by_gid(0)
         self.assertIsNone(image)
 
-        image = self.m.get_tile_image_by_gid(1, 1, 1, 1)
+        image = self.m.get_tile_image_by_gid(1)
         self.assertIsNotNone(image)
 
     def test_reserved_names_check_disabled_with_option(self) -> None:
