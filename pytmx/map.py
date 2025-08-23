@@ -506,18 +506,19 @@ class TiledMap(TiledElement):
         gid = self.get_tile_gid(x, y, layer)
         return self.get_tile_properties_by_gid(gid)
 
-    def get_tile_locations_by_gid(self, gid: int) -> Iterable[MapPoint]:
+    def get_tile_locations_by_gid(self, gid: int, only_visible: bool = True) -> Iterable[MapPoint]:
         """Search map for tile locations by the GID.
 
         Note: Not a fast operation.  Cache results if used often.
 
         Args:
             gid (int): GID to be searched for.
+            only_visible (bool): If True, only return locations from visible tile layers.
 
         Returns:
-            Iterable[MapPoint]: (int, int, int) tuples, where the layer is index of the visible tile layers.
+            Iterable[MapPoint]: (int, int, int) tuples, where the layer is index of the tile layers.
         """
-        for l in self.visible_tile_layers:
+        for l in self.visible_tile_layers if only_visible else self.tile_layers:
             for x, y, _gid in [i for i in self.layers[l].iter_data() if i[2] == gid]:
                 yield x, y, l
 
