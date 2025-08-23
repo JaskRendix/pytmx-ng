@@ -379,15 +379,14 @@ class TiledMap(TiledElement):
         else:
             return self.get_tile_image_by_gid(gid)
 
-    def get_tile_image_by_gid(self, gid: int) -> Any:
+    def get_tile_image_by_gid(self, gid: int, *args, **kwargs) -> Any:
         """
         Return the tile image for this location.
 
         Args:
             gid (int): GID of image.
-            x (int): X coordinate in the map.
-            y (int): Y coordinate in the map.
-            layer (int): Layer index.
+            *args: Additional arguments. added for compatibility with old API.
+            **kwargs: Additional keyword arguments. added for compatibility with old API.
 
         Returns:
             Any: The image object.
