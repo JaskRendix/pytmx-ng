@@ -342,13 +342,13 @@ class TiledMap(TiledElement):
                 image = loader()
                 self.images[real_gid] = image
 
-    def get_tile_image(self, x: int, y: int, nr_layer: int) -> Any:
+    def get_tile_image(self, x: int, y: int, target_layer: int) -> Any:
         """Return the tile image for this location.
 
         Args:
             x (int): The x coordinate.
             y (int): The y coordinate.
-            layer (int): The layer's number.
+            target_layer (int): The layer's number.
 
         Returns:
             Any: the image object type will depend on the loader (ie. pygame surface).
@@ -357,23 +357,41 @@ class TiledMap(TiledElement):
             TypeError: if coordinates are not integers.
             ValueError: if the coordinates are out of bounds, or GID not found.
         """
-        if not (x >= 0 and y >= 0):
-            raise ValueError(f"Tile coordinates must be non-negative, were ({x}, {y})")
+        try:
+            x = int(x)
+            y = int(y)
+            target_layer = int(target_layer)
+        except ValueError:
+            msg = f"Tile coordinates and layers must be integers. Got: ({x}, {y}), layer={target_layer}"
+            logger.error(msg)
+            raise TypeError(msg)
+
+        if not (x >= 0 and y >= 0 and target_layer >= 0):
+            msg = f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={target_layer}"
+            logger.error(msg)
+            raise ValueError(msg)
 
         try:
-            layer = self.layers[nr_layer]
+            layer = self.layers[target_layer]
         except IndexError:
-            raise ValueError("Layer not found")
+            msg = f"Layer {target_layer} not found"
+            logger.error(msg)
+            raise ValueError(msg)
 
-        assert isinstance(layer, TiledTileLayer)
+        if not isinstance(layer, TiledTileLayer):
+            msg = f"Layer {target_layer} is not a tile layer"
+            logger.error(msg)
+            raise ValueError(msg)
 
         try:
             gid = layer.data[y][x]
-        except (IndexError, ValueError):
-            raise ValueError("GID not found")
+        except IndexError:
+            msg = "Coords: ({x},{y}) in layer {target_layer} is invalid"
+            logger.error(msg)
+            raise ValueError(msg)
         except TypeError:
             msg = "Tiles must be specified in integers."
-            logger.debug(msg)
+            logger.error(msg)
             raise TypeError(msg)
 
         else:
@@ -407,13 +425,13 @@ class TiledMap(TiledElement):
             logger.debug(msg)
             raise ValueError(msg)
 
-    def get_tile_gid(self, x: int, y: int, layer: int) -> int:
+    def get_tile_gid(self, x: int, y: int, target_layer: int) -> int:
         """Return the tile image GID for this location.
 
         Args:
             x (int): The x coordinate.
             y (int): The y coordinate.
-            layer (int): The layer's number.
+            target_layer (int): The layer's number.
 
         Returns:
             int: The tile GID.
@@ -421,17 +439,45 @@ class TiledMap(TiledElement):
         Raises:
             ValueError: If coordinates are out of bounds.
         """
-        if not (x >= 0 and y >= 0 and layer >= 0):
-            raise ValueError(
-                f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={layer}"
-            )
+        try:
+            x = int(x)
+            y = int(y)
+            target_layer = int(target_layer)
+        except ValueError:
+            msg = f"Tile coordinates and layers must be integers. Got: ({x}, {y}), layer={target_layer}"
+            logger.error(msg)
+            raise TypeError(msg)
+
+        if not (x >= 0 and y >= 0 and target_layer >= 0):
+            msg = f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={target_layer}"
+            logger.error(msg)
+            raise ValueError(msg)
+            
 
         try:
-            return self.layers[int(layer)].data[int(y)][int(x)]
-        except (IndexError, ValueError):
-            msg = f"Coords: ({x},{y}) in layer {layer} is invalid"
-            logger.debug(msg)
+            layer = self.layers[target_layer]
+        except IndexError:
+            msg = f"Layer {target_layer} not found"
+            logger.error(msg)
             raise ValueError(msg)
+
+        try:
+            return layer.data[y][x]
+        except IndexError:
+            msg = f"Coords: ({x},{y}) in layer {target_layer} is invalid"
+            logger.error(msg)
+            raise ValueError(msg)
+
+    def get_tile_properties_by_gid(self, gid: int) -> Optional[dict]:
+        """Get the tile properties of a tile GID.
+
+        Args:
+            gid (int): GID.
+
+        Returns:
+            Optional[dict]: Dictionary of properties for GID, or None.
+        """
+        return self.tile_properties.get(gid, None)
 
     def get_tile_properties(self, x: int, y: int, layer: int) -> Optional[dict]:
         """Return the tile image GID for this location.
@@ -447,27 +493,8 @@ class TiledMap(TiledElement):
         Raises:
             ValueError: If coordinates are out of bounds
         """
-        if not (x >= 0 and y >= 0 and layer >= 0):
-            raise ValueError(
-                f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={layer}"
-            )
-
-        try:
-            gid = self.layers[int(layer)].data[int(y)][int(x)]
-        except (IndexError, ValueError):
-            msg = f"Coords: ({x},{y}) in layer {layer} is invalid."
-            logger.debug(msg)
-            raise ValueError(msg)
-
-        else:
-            try:
-                return self.tile_properties[gid]
-            except (IndexError, ValueError):
-                msg = f"Coords: ({x},{y}) in layer {layer} has invalid GID: {gid}"
-                logger.debug(msg)
-                raise ValueError(msg)
-            except KeyError:
-                return None
+        gid = self.get_tile_gid(x, y, layer)
+        return self.get_tile_properties_by_gid(gid)
 
     def get_tile_locations_by_gid(self, gid: int) -> Iterable[MapPoint]:
         """Search map for tile locations by the GID.
@@ -483,20 +510,6 @@ class TiledMap(TiledElement):
         for l in self.visible_tile_layers:
             for x, y, _gid in [i for i in self.layers[l].iter_data() if i[2] == gid]:
                 yield x, y, l
-
-    def get_tile_properties_by_gid(self, gid: int) -> Optional[dict]:
-        """Get the tile properties of a tile GID.
-
-        Args:
-            gid (int): GID.
-
-        Returns:
-            Optional[dict]: Dictionary of properties for GID, or None.
-        """
-        try:
-            return self.tile_properties[gid]
-        except KeyError:
-            return None
 
     def set_tile_properties(self, gid: int, properties: dict) -> None:
         """Set the tile properties of a tile GID.
