@@ -24,6 +24,7 @@ Imports are organized and documented for clarity.
 
 import json
 import os
+import warnings
 
 # --- stdlib imports ---------------------------------------------------------
 from collections import defaultdict
@@ -413,6 +414,15 @@ class TiledMap(TiledElement):
             TypeError: If `gid` is not a non-negative integer.
             ValueError: If there is no image for this GID.
         """
+        # Deprecation notice: any extra args/kwargs are ignored and will be disallowed
+        # in a future release. Emit a warning to help users migrate.
+        if args or kwargs:
+            warnings.warn(
+                "get_tile_image_by_gid(gid, *args, **kwargs): extra arguments are deprecated and ignored; pass only 'gid'",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         if not isinstance(gid, int) or gid < 0:
             msg = f"GIDs must be a non-negative integer. Got: {gid}"
             logger.debug(msg)
