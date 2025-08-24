@@ -15,12 +15,8 @@ Missing interactive_tests:
 - terrains
 """
 
-import os
-
-# os.environ["SDL_VIDEODRIVER"] = "dummy"
-# os.environ["SDL_AUDIODRIVER"] = "dummy"
-
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -31,6 +27,10 @@ from pytmx.image_layer import TiledImageLayer
 from pytmx.layer import TiledTileLayer
 from pytmx.object_group import TiledObjectGroup
 from pytmx.util_pygame import load_pygame
+
+# os.environ["SDL_VIDEODRIVER"] = "dummy"
+# os.environ["SDL_AUDIODRIVER"] = "dummy"
+
 
 # Logging setup
 logging.basicConfig(
