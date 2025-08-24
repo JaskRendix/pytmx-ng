@@ -7,7 +7,10 @@ Semantic Versioning.
 
 ## [Unreleased]
 
-Nothing yet.
+- Closed PRs:
+  - #21: Refactor TiledObjectGroup to Use Internal List (by @JaskRendix) — https://github.com/pnearing/pytmx-ng/pull/21
+  - #20: Refactor TiledTileset XML Parsing (by @JaskRendix) — https://github.com/pnearing/pytmx-ng/pull/20
+  - #19: Map changes — refactor tile methods and update get_tile_image_by_gid API (by @pnearing) — https://github.com/pnearing/pytmx-ng/pull/19
 
 ## [3.34.1] - 2025-08-23
 
