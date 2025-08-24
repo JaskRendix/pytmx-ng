@@ -35,7 +35,6 @@ from operator import attrgetter
 from typing import Any, Iterator, Optional, Self
 from xml.etree import ElementTree
 
-
 # --- internal imports -------------------------------------------------------
 from .class_type import TiledClassType
 from .constants import GID_TRANS_ROT, MapPoint, TileFlags
@@ -462,7 +461,6 @@ class TiledMap(TiledElement):
             msg = f"Tile coordinates and layers must be non-negative, were ({x}, {y}), layer={target_layer}"
             logger.error(msg)
             raise ValueError(msg)
-            
 
         try:
             layer = self.layers[target_layer]
@@ -506,7 +504,9 @@ class TiledMap(TiledElement):
         gid = self.get_tile_gid(x, y, layer)
         return self.get_tile_properties_by_gid(gid)
 
-    def get_tile_locations_by_gid(self, gid: int, only_visible: bool = True) -> Iterable[MapPoint]:
+    def get_tile_locations_by_gid(
+        self, gid: int, only_visible: bool = True
+    ) -> Iterable[MapPoint]:
         """Search map for tile locations by the GID.
 
         Note: Not a fast operation.  Cache results if used often.

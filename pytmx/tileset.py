@@ -111,88 +111,76 @@ class TiledTileset(TiledElement):
             )
         return frames
 
-    def parse_xml(self, node: ElementTree.Element) -> Self:
-        """
-        Parse a TiledTileset layer from ElementTree xml node.
-
-        Returns:
-            TiledTileset: The parsed TiledTileset layer.
-        """
-        logger.debug("Starting XML parsing for tileset")
-
+    def _handle_external_source(self, node: ElementTree.Element) -> ElementTree.Element:
+        """Handles parsing an external tileset source."""
         source = node.get("source", None)
-        if source:
-            if source[-4:].lower() == ".tsx":
-                self.tileset_source = source
-                self.firstgid = int(node.get("firstgid"))
-                logger.debug(
-                    f"External tileset detected: {source}, firstgid={self.firstgid}"
-                )
+        if not source:
+            return node
 
-                resolved_path = self._resolve_path(source, relative_to_source=False)
-                if not os.path.exists(resolved_path):
-                    raise FileNotFoundError(
-                        f"Cannot find tileset file {source} from {self.parent.filename}, "
-                        f"should be at {resolved_path}"
-                    )
-                try:
-                    node = ElementTree.parse(resolved_path).getroot()
-                    logger.debug(
-                        f"Successfully loaded external tileset from {resolved_path}"
-                    )
-                except (OSError, ParseError) as e:
-                    msg = f"Error loading external tileset: {resolved_path}"
-                    logger.error(msg)
-                    raise ParseError(msg) from e
-            else:
-                msg = f"Found external tileset, but cannot handle type: {self.source}"
-                logger.error(msg)
-                raise ValueError(msg)
+        if source[-4:].lower() != ".tsx":
+            msg = f"Found external tileset, but cannot handle type: {source}"
+            logger.error(msg)
+            raise ValueError(msg)
 
-        self._set_properties(node)
-        logger.debug(
-            f"Tileset properties set: name={self.name}, tilecount={self.tilecount}, columns={self.columns}"
-        )
+        self.tileset_source = source
+        self.firstgid = int(node.get("firstgid"))
+        logger.debug(f"External tileset detected: {source}, firstgid={self.firstgid}")
 
+        resolved_path = self._resolve_path(source, relative_to_source=False)
+
+        try:
+            new_node = ElementTree.parse(resolved_path).getroot()
+            logger.debug(f"Successfully loaded external tileset from {resolved_path}")
+            return new_node
+        except FileNotFoundError as e:
+            msg = f"Cannot find tileset file {source} from {self.parent.filename}, should be at {resolved_path}"
+            logger.error(msg)
+            raise FileNotFoundError(msg) from e
+        except ParseError as e:
+            msg = f"Error loading external tileset: {resolved_path}"
+            logger.error(msg)
+            raise ParseError(msg) from e
+
+    def _parse_all_tiles(self, node: ElementTree.Element, is_external: bool) -> None:
+        """Parses all individual tiles within the tileset node."""
         for child in node.iter("tile"):
             tiled_gid = int(child.get("id"))
-            p = self._parse_tile_properties(child)
+            props = self._parse_tile_properties(child)
             logger.debug(f"Parsing tile ID: {tiled_gid}")
 
-            if "source" in p:
-                p["source"] = self._resolve_path(
-                    p["source"], relative_to_source=bool(source)
-                )
-
-            image = child.find("image")
-            if image is not None:
-                tile_source = image.get("source")
-                if source:
+            image_node = child.find("image")
+            if image_node is not None:
+                tile_source = image_node.get("source")
+                if is_external:
                     tile_source = self._resolve_path(
                         tile_source, relative_to_source=True
                     )
-                p["source"] = tile_source
-                p["trans"] = image.get("trans", None)
-                p["width"] = int(image.get("width"))
-                p["height"] = int(image.get("height"))
+                props["source"] = tile_source
+                props["trans"] = image_node.get("trans", None)
+                props["width"] = int(image_node.get("width"))
+                props["height"] = int(image_node.get("height"))
                 logger.debug(
-                    f"Tile image parsed: source={tile_source}, size={p['width']}x{p['height']}"
+                    f"Tile image parsed: source={tile_source}, size={props['width']}x{props['height']}"
                 )
             else:
-                p["width"] = self.tilewidth
-                p["height"] = self.tileheight
+                props["width"] = self.tilewidth
+                props["height"] = self.tileheight
 
             anim = child.find("animation")
-            p["frames"] = self._parse_animation_frames(anim) if anim is not None else []
+            props["frames"] = (
+                self._parse_animation_frames(anim) if anim is not None else []
+            )
 
             for objgrp_node in child.findall("objectgroup"):
                 objectgroup = TiledObjectGroup(self.parent, objgrp_node, None)
-                p["colliders"] = objectgroup
+                props["colliders"] = objectgroup
                 logger.debug(f"Object group parsed for tile ID {tiled_gid}")
 
             for gid, flags in self.parent.map_gid2(tiled_gid + self.firstgid):
-                self.parent.set_tile_properties(gid, p)
+                self.parent.set_tile_properties(gid, props)
 
+    def _parse_tileset_image_and_offset(self, node: ElementTree.Element) -> None:
+        """Parses the main tileset image and offset nodes."""
         tile_offset_node = node.find("tileoffset")
         if tile_offset_node is not None:
             self.offset = (
@@ -212,6 +200,32 @@ class TiledTileset(TiledElement):
             logger.debug(
                 f"Tileset image node parsed: source={self.source}, size={self.width}x{self.height}, trans={self.trans}"
             )
+
+    def parse_xml(self, node: ElementTree.Element) -> Self:
+        """
+        Parse a TiledTileset layer from ElementTree xml node.
+
+        Returns:
+            TiledTileset: The parsed TiledTileset layer.
+        """
+        logger.debug("Starting XML parsing for tileset")
+
+        original_source = node.get("source")
+
+        # Handle external tileset source
+        node = self._handle_external_source(node)
+
+        # Set main tileset properties
+        self._set_properties(node)
+        logger.debug(
+            f"Tileset properties set: name={self.name}, tilecount={self.tilecount}, columns={self.columns}"
+        )
+
+        # Parse all individual tiles
+        self._parse_all_tiles(node, bool(original_source))
+
+        # Parse main tileset image and offset
+        self._parse_tileset_image_and_offset(node)
 
         logger.debug("Finished parsing tileset XML")
         return self
