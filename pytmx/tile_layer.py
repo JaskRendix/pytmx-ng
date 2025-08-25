@@ -24,6 +24,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, Self
 from xml.etree import ElementTree
 
+from .chunk import extract_chunks, stitch_chunks
 from .element import TiledElement
 from .utils import reshape_data, unpack_gids
 
@@ -42,7 +43,8 @@ class TiledTileLayer(TiledElement):
     def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         super().__init__()
         self.parent = parent
-        self.data = list()
+        self.data = []
+        self.chunks = []
 
         # defaults from the specification
         self.name = None
@@ -100,9 +102,13 @@ class TiledTileLayer(TiledElement):
         data_node = node.find("data")
         chunk_nodes = data_node.findall("chunk")
         if chunk_nodes:
-            msg = "TMX map size: infinite is not supported."
-            logger.error(msg)
-            raise ValueError(msg)
+            self.chunks = extract_chunks(
+                chunk_nodes,
+                encoding=data_node.get("encoding"),
+                compression=data_node.get("compression"),
+            )
+            self.data = stitch_chunks(self.chunks, self.width, self.height, self.parent)
+            return self
 
         child = data_node.find("tile")
         if child is not None:
