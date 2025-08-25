@@ -6,7 +6,8 @@ The format is based on Keep a Changelog, and this project adheres to
 Semantic Versioning.
 
 ## [Unreleased]
-  - Nothing yet.
+- Closed PRs:
+  - #23: Improve Type Safety via mypy --strict Compliance (by @JaskRendix) — merged 2025-08-25 — https://github.com/pnearing/pytmx-ng/pull/23
 
 ## [3.35.0] - 2025-08-25
 

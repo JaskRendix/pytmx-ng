@@ -598,7 +598,7 @@ class TiledMap(TiledElement):
         self.layers.append(layer)
         if layer.name is None:
             logger.warning("Layer has no name; assigning default.")
-            layer.name = f"layer_{len(self.layernames)}"
+            layer.name = f"layer_{int(layer.id)}"
 
         self.layernames[layer.name] = layer
 
