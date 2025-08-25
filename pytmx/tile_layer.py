@@ -29,6 +29,7 @@ from .element import TiledElement
 from .utils import reshape_data, unpack_gids
 
 if TYPE_CHECKING:
+    from .chunk import Chunk
     from .map import TiledMap
 
 logger = logging.getLogger(__name__)
@@ -43,17 +44,17 @@ class TiledTileLayer(TiledElement):
     def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         super().__init__()
         self.parent = parent
-        self.data = []
-        self.chunks = []
+        self.data: list[list[int]] = []
+        self.chunks: list[Chunk] = []
 
         # defaults from the specification
-        self.name = None
-        self.width = 0
-        self.height = 0
-        self.opacity = 1.0
-        self.visible = True
-        self.offsetx = 0
-        self.offsety = 0
+        self.name: Optional[str] = None
+        self.width: int = 0
+        self.height: int = 0
+        self.opacity: float = 1.0
+        self.visible: bool = True
+        self.offsetx: int = 0
+        self.offsety: int = 0
 
         self.parse_xml(node)
 
@@ -99,13 +100,17 @@ class TiledTileLayer(TiledElement):
             TiledTileLayer: The parsed TiledTileLayer layer.
         """
         self._set_properties(node)
+
         data_node = node.find("data")
+        if data_node is None:
+            raise ValueError("Missing <data> element in tile layer XML.")
+
         chunk_nodes = data_node.findall("chunk")
         if chunk_nodes:
+            encoding = data_node.get("encoding")
+            compression = data_node.get("compression")
             self.chunks = extract_chunks(
-                chunk_nodes,
-                encoding=data_node.get("encoding"),
-                compression=data_node.get("compression"),
+                chunk_nodes, encoding=encoding, compression=compression
             )
             self.data = stitch_chunks(self.chunks, self.width, self.height, self.parent)
             return self
@@ -116,12 +121,15 @@ class TiledTileLayer(TiledElement):
                 "XML tile elements are no longer supported. Must use base64 or csv map formats."
             )
 
+        if data_node.text is None:
+            raise ValueError("Missing tile data content in <data> element.")
+
         temp = [
             self.parent.register_gid_check_flags(gid)
             for gid in unpack_gids(
                 text=data_node.text.strip(),
-                encoding=data_node.get("encoding", None),
-                compression=data_node.get("compression", None),
+                encoding=data_node.get("encoding"),
+                compression=data_node.get("compression"),
             )
         ]
 

@@ -28,16 +28,16 @@ import warnings
 
 # --- stdlib imports ---------------------------------------------------------
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from itertools import chain, product
 from logging import getLogger
 from operator import attrgetter
-from typing import Any, Iterator, Optional, Self
+from typing import Any, Iterator, Optional, Protocol, Self, Union
 from xml.etree import ElementTree
 
 # --- internal imports -------------------------------------------------------
 from .class_type import TiledClassType
-from .constants import GID_TRANS_ROT, MapPoint, TileFlags
+from .constants import GID_TRANS_ROT, MapPoint, TileFlags, empty_flags
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
 from .image_layer import TiledImageLayer
@@ -51,6 +51,12 @@ from .utils import decode_gid, default_image_loader
 logger = getLogger(__name__)
 
 
+class ImageLoaderFactory(Protocol):
+    def __call__(
+        self, filename: str, flags: Any, **kwargs: Any
+    ) -> Callable[[Any, Any], tuple[str, Any, Any]]: ...
+
+
 class TiledMap(TiledElement):
     """Contains the layers, objects, and images from a Tiled .tmx map."""
 
@@ -58,7 +64,7 @@ class TiledMap(TiledElement):
         self,
         filename: Optional[str] = None,
         custom_property_filename: Optional[list[str]] = None,
-        image_loader=default_image_loader,
+        image_loader: ImageLoaderFactory = default_image_loader,
         optional_gids: Optional[set[int]] = set(),
         load_all_tiles: Optional[bool] = True,
         invert_y: Optional[bool] = True,
@@ -95,7 +101,7 @@ class TiledMap(TiledElement):
         # tiles that have properties
         self.tile_properties: dict[int, dict[str, str]] = {}
         self.layernames: dict[str, TiledLayer] = {}
-        self.objects_by_id: dict[str, TiledObject] = {}
+        self.objects_by_id: dict[int, TiledObject] = {}
         self.objects_by_name: dict[str, TiledObject] = {}
 
         # only used tiles are actually loaded, so there will be a difference
@@ -108,35 +114,36 @@ class TiledMap(TiledElement):
         self.imagemap: dict[tuple[int, TileFlags], tuple[int, TileFlags]] = {}
         # mapping of tiledgid to pytmx gid
         self.tiledgidmap: dict[int, int] = {}
-        self.maxgid = 1
+        self.maxgid: int = 1
 
         # should be filled in by a loader function
-        self.images = list()
+        self.images: list[Any] = []
 
         # defaults from the TMX specification
-        self.version = "0.0"
-        self.tiledversion = ""
-        self.orientation = "orthogonal"
-        self.renderorder = "right-down"
-        self.width = 0  # width of map in tiles
-        self.height = 0  # height of map in tiles
-        self.tilewidth = 0  # width of a tile in pixels
-        self.tileheight = 0  # height of a tile in pixels
-        self.hexsidelength = 0
+        self.version: str = "0.0"
+        self.tiledversion: str = ""
+        self.orientation: str = "orthogonal"
+        self.renderorder: str = "right-down"
+        self.width: int = 0  # width of map in tiles
+        self.height: int = 0  # height of map in tiles
+        self.tilewidth: int = 0  # width of a tile in pixels
+        self.tileheight: int = 0  # height of a tile in pixels
+        self.hexsidelength: int = 0
         self.staggeraxis = None
         self.staggerindex = None
-        self.background_color = None
-        self.nextobjectid = 0
+        self.background_color: Optional[str] = None
+        self.nextobjectid: int = 0
 
-        self.custom_types = dict()
+        self.custom_types: dict[str, TiledClassType] = {}
 
         # initialize the gid mapping
-        self.imagemap[(0, 0)] = 0
+        self.imagemap[(0, empty_flags)] = (0, empty_flags)
 
         if custom_property_filename:
             try:
-                with open(custom_property_filename) as f:
-                    self.parse_json(json.load(f))
+                for filename in custom_property_filename:
+                    with open(filename) as f:
+                        self.parse_json(json.load(f))
             except (OSError, json.JSONDecodeError) as e:
                 logger.error(
                     f"Error loading custom property file: {custom_property_filename}"
@@ -145,17 +152,17 @@ class TiledMap(TiledElement):
 
         if filename:
             try:
-                root_node = ElementTree.parse(self.filename).getroot()
+                root_node = ElementTree.parse(filename).getroot()
                 self.parse_xml(root_node)
             except (OSError, ElementTree.ParseError) as e:
-                logger.error(f"Error loading map file: {self.filename}")
+                logger.error(f"Error loading map file: {filename}")
                 raise e
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: "{self.filename}">'
 
     # iterate over layers and objects in map
-    def __iter__(self) -> Iterator[Self]:
+    def __iter__(self) -> Iterator[Union[TiledLayer, TiledObject]]:
         return chain(self.layers, self.objects)
 
     def _set_properties(
@@ -169,17 +176,15 @@ class TiledMap(TiledElement):
         self.height = int(self.height)
         self.width = int(self.width)
 
-    def parse_json(self, data: dict) -> None:
-        """Parse custom data types from a JSON object
-
-        Args:
-            data (dict): Dictionary from JSON object to parse
-        """
+    def parse_json(self, data: list[dict[str, Any]]) -> None:
+        """Parse custom data types from a JSON object."""
         for custom_type in data:
-            if custom_type["type"] == "class":
-                new = TiledClassType(custom_type["name"], custom_type["members"])
-
-                self.custom_types[custom_type["name"]] = new
+            if custom_type.get("type") == "class":
+                name = custom_type.get("name")
+                members = custom_type.get("members", [])
+                if isinstance(name, str) and isinstance(members, list):
+                    new = TiledClassType(name, members)
+                    self.custom_types[name] = new
 
     def parse_xml(self, node: ElementTree.Element) -> Self:
         """
@@ -208,7 +213,8 @@ class TiledMap(TiledElement):
             self.add_layer(objectgroup)
             for obj in objectgroup:
                 self.objects_by_id[obj.id] = obj
-                self.objects_by_name[obj.name] = obj
+                if obj.name:
+                    self.objects_by_name[obj.name] = obj
 
         for subnode in node.findall(".//tileset"):
             self.add_tileset(TiledTileset(self, subnode))
@@ -277,6 +283,8 @@ class TiledMap(TiledElement):
             if ts.source is None:
                 continue
 
+            if self.filename is None:
+                raise ValueError("filename must not be None when loading images")
             path = os.path.join(os.path.dirname(self.filename), ts.source)
             colorkey = getattr(ts, "trans", None)
             loader = self.image_loader(path, colorkey, tileset=ts)
@@ -302,9 +310,13 @@ class TiledMap(TiledElement):
                 # gids is None if the tile is never used
                 # but give another chance to load the gid anyway
                 if gids is None:
-                    if self.load_all_tiles or real_gid in self.optional_gids:
+                    if (
+                        self.load_all_tiles
+                        or self.optional_gids
+                        and real_gid in self.optional_gids
+                    ):
                         # TODO: handle flags? - might never be an issue, though
-                        gids = [self.register_gid(real_gid, flags=0)]
+                        gids = [(self.register_gid(real_gid, empty_flags), empty_flags)]
 
                 if gids:
                     # flags might rotate/flip the image, so let the loader
@@ -315,7 +327,7 @@ class TiledMap(TiledElement):
                 #     # not used in layer data give another chance to load the tile anyway
                 #     if self.load_all_tiles or real_gid in self.optional_gids:
                 #         # TODO: handle flags? - might never be an issue, though
-                #         self.register_gid(real_gid, flags=0)
+                #         self.register_gid(real_gid, empty_flags)
 
         # load image layer images
         for layer in (i for i in self.layers if isinstance(i, TiledImageLayer)):
@@ -325,9 +337,13 @@ class TiledMap(TiledElement):
                 real_gid = len(self.images)
                 gid = self.register_gid(real_gid)
                 layer.gid = gid
+
+                if self.filename is None:
+                    raise ValueError("filename must not be None when loading images")
+
                 path = os.path.join(os.path.dirname(self.filename), source)
                 loader = self.image_loader(path, colorkey)
-                image = loader()
+                image = loader(None, None)
                 self.images.append(image)
 
         # load images in tiles.
@@ -337,9 +353,13 @@ class TiledMap(TiledElement):
             source = props.get("source", None)
             if source:
                 colorkey = props.get("trans", None)
+
+                if self.filename is None:
+                    raise ValueError("filename must not be None when loading images")
+
                 path = os.path.join(os.path.dirname(self.filename), source)
                 loader = self.image_loader(path, colorkey)
-                image = loader()
+                image = loader(None, None)
                 self.images[real_gid] = image
 
     def get_tile_image(self, x: int, y: int, target_layer: int) -> Any:
@@ -397,7 +417,7 @@ class TiledMap(TiledElement):
         else:
             return self.get_tile_image_by_gid(gid)
 
-    def get_tile_image_by_gid(self, gid: int, *args, **kwargs) -> Any:
+    def get_tile_image_by_gid(self, gid: int, *args: Any, **kwargs: Any) -> Any:
         """
         Return the tile image for this location.
 
@@ -476,7 +496,7 @@ class TiledMap(TiledElement):
             logger.error(msg)
             raise ValueError(msg)
 
-    def get_tile_properties_by_gid(self, gid: int) -> Optional[dict]:
+    def get_tile_properties_by_gid(self, gid: int) -> Optional[dict[str, Any]]:
         """Get the tile properties of a tile GID.
 
         Args:
@@ -487,7 +507,9 @@ class TiledMap(TiledElement):
         """
         return self.tile_properties.get(gid, None)
 
-    def get_tile_properties(self, x: int, y: int, layer: int) -> Optional[dict]:
+    def get_tile_properties(
+        self, x: int, y: int, layer: int
+    ) -> Optional[dict[str, Any]]:
         """Return the tile image GID for this location.
 
         Args:
@@ -518,11 +540,12 @@ class TiledMap(TiledElement):
         Returns:
             Iterable[MapPoint]: (int, int, int) tuples, where the layer is index of the tile layers.
         """
-        for l in self.visible_tile_layers if only_visible else self.tile_layers:
-            for x, y, _gid in [i for i in self.layers[l].iter_data() if i[2] == gid]:
+        for layer in self.visible_tile_layers if only_visible else self.tile_layers:
+            l = self.layers.index(layer)
+            for x, y, _gid in [i for i in layer.iter_data() if i[2] == gid]:
                 yield x, y, l
 
-    def set_tile_properties(self, gid: int, properties: dict) -> None:
+    def set_tile_properties(self, gid: int, properties: dict[str, str]) -> None:
         """Set the tile properties of a tile GID.
 
         Args:
@@ -573,6 +596,10 @@ class TiledMap(TiledElement):
         )
 
         self.layers.append(layer)
+        if layer.name is None:
+            logger.warning("Layer has no name; assigning default.")
+            layer.name = f"layer_{len(self.layernames)}"
+
         self.layernames[layer.name] = layer
 
     def add_tileset(self, tileset: TiledTileset) -> None:
@@ -659,7 +686,7 @@ class TiledMap(TiledElement):
         logger.debug(msg)
         raise ValueError(msg)
 
-    def get_tile_colliders(self) -> Iterable[tuple[int, list[dict]]]:
+    def get_tile_colliders(self) -> Iterable[tuple[int, list[dict[str, Any]]]]:
         """Return iterator of (gid, dict) pairs of tiles with colliders.
 
         Returns:
@@ -667,7 +694,9 @@ class TiledMap(TiledElement):
         """
         for gid, props in self.tile_properties.items():
             colliders = props.get("colliders")
-            if colliders:
+            if isinstance(colliders, list) and all(
+                isinstance(c, dict) for c in colliders
+            ):
                 yield gid, colliders
 
     def get_tile_flags_by_gid(self, gid: int) -> TileFlags:
@@ -682,8 +711,9 @@ class TiledMap(TiledElement):
         real_gid = self.tiledgidmap[gid]
         flags_list = self.gidmap[real_gid]
         for tile_gid, flags in flags_list:
-            if gid == tile_gid:
+            if flags and gid == tile_gid:
                 return flags
+        return empty_flags  # default fallback
 
     def pixels_to_tile_pos(self, position: tuple[int, int]) -> tuple[int, int]:
         """Convert pixel position to tile position.
@@ -721,21 +751,16 @@ class TiledMap(TiledElement):
         Returns:
             Iterable[TiledLayer]: Iterator of Layer objects that are set "visible".
         """
-
         return (l for l in self.layers if l.visible)
 
     @property
     def visible_tile_layers(self) -> Iterable[TiledTileLayer]:
-        """Return iterator of layer indexes that are set "visible".
+        """Return iterator of visible tile layers.
 
         Returns:
-            Iterable[TiledTileLayer]: A list of layer indexes.
+            Iterable[TiledTileLayer]: A list of visible tile layers.
         """
-        return (
-            i
-            for (i, l) in enumerate(self.layers)
-            if l.visible and isinstance(l, TiledTileLayer)
-        )
+        return (l for l in self.layers if l.visible and isinstance(l, TiledTileLayer))
 
     @property
     def visible_object_groups(self) -> Iterable[TiledObjectGroup]:
@@ -744,11 +769,7 @@ class TiledMap(TiledElement):
         Returns:
             Iterable[TiledObjectGroup]: A list of object group indexes that are set to "visible".
         """
-        return (
-            i
-            for (i, l) in enumerate(self.layers)
-            if l.visible and isinstance(l, TiledObjectGroup)
-        )
+        return (l for l in self.layers if l.visible and isinstance(l, TiledObjectGroup))
 
     def register_gid(self, tiled_gid: int, flags: Optional[TileFlags] = None) -> int:
         """Used to manage the mapping of GIDs between .tmx and pytmx.
@@ -796,7 +817,9 @@ class TiledMap(TiledElement):
         else:
             return self.register_gid(*decode_gid(tiled_gid))
 
-    def map_gid(self, tiled_gid: int) -> Optional[list[int]]:
+    def map_gid(
+        self, tiled_gid: int
+    ) -> Optional[list[tuple[int, Optional[TileFlags]]]]:
         """Used to lookup a GID read from a TMX file's data.
 
         Args:
@@ -814,11 +837,18 @@ class TiledMap(TiledElement):
             logger.debug(msg)
             raise TypeError(msg)
 
-    def map_gid2(self, tiled_gid: int) -> list[tuple[int, Optional[int]]]:
-        """WIP.  need to refactor the gid code"""
+    def map_gid2(self, tiled_gid: int) -> list[tuple[int, Optional[TileFlags]]]:
+        """Map a tiled GID to internal GID and optional TileFlags.
+
+        Args:
+            tiled_gid (int): The GID from the TMX file.
+
+        Returns:
+            list[tuple[int, TileFlags | None]]: A list of tuples containing internal GIDs and optional flags.
+        """
         tiled_gid = int(tiled_gid)
 
-        # gidmap is a default dict, so cannot trust to raise KeyError
+        # gidmap is a defaultdict, so we check explicitly
         if tiled_gid in self.gidmap:
             return self.gidmap[tiled_gid]
         else:

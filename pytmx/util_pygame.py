@@ -19,11 +19,12 @@ License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
 import itertools
 import logging
-from collections.abc import Callable
-from typing import Any, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any, Optional, Union, cast
 
 from .constants import ColorLike, PointLike, TileFlags
 from .map import TiledMap
+from .tileset import TiledTileset
 
 logger = logging.getLogger(__name__)
 
@@ -65,21 +66,25 @@ def count_colorkey_pixels(surface: pygame.Surface, colorkey: ColorLike) -> int:
         import pygame.surfarray
 
         pixel_array = pygame.surfarray.pixels3d(surface)
-        r, g, b = colorkey[:3]
-        return (
-            (pixel_array[:, :, 0] == r)
-            & (pixel_array[:, :, 1] == g)
-            & (pixel_array[:, :, 2] == b)
-        ).sum()
+        if isinstance(colorkey, (tuple, list)):
+            r, g, b = colorkey[:3]
+        else:
+            raise TypeError("colorkey must be a tuple or list of RGB values")
+        return int(((pixel_array[:, :, 0] == r) & ...).sum())
     except ImportError:
         # Slow fallback method
         width, height = surface.get_size()
-        return sum(
-            1
-            for x in range(width)
-            for y in range(height)
-            if surface.get_at((x, y))[:3] == colorkey[:3]
-        )
+
+        if isinstance(colorkey, (tuple, list)) and len(colorkey) >= 3:
+            rgb = tuple(colorkey[:3])
+            return sum(
+                True
+                for x in range(width)
+                for y in range(height)
+                if surface.get_at((x, y))[:3] == rgb
+            )
+        else:
+            raise TypeError("colorkey must be a tuple or list of RGB values")
 
 
 def has_transparency(surface: pygame.Surface, threshold: int = 254) -> bool:
@@ -169,11 +174,11 @@ def pygame_image_loader(
     if colorkey:
         if isinstance(colorkey, str):
             if not colorkey.startswith("#") and len(colorkey) in (6, 8):
-                colorkey = pygame.Color(f"#{colorkey}")
+                colorkey = tuple(pygame.Color(f"#{colorkey}"))[:3]  # type: ignore
             else:
-                colorkey = pygame.Color(colorkey)
+                colorkey = tuple(pygame.Color(colorkey))[:3]  # type: ignore
         elif isinstance(colorkey, tuple) and 3 <= len(colorkey) <= 4:
-            colorkey = pygame.Color(colorkey)
+            colorkey = tuple(pygame.Color(colorkey))[:3]  # type: ignore
         else:
             logger.error("Invalid colorkey")
             raise ValueError("Invalid colorkey")
@@ -264,7 +269,10 @@ def build_rects(
     elif isinstance(tileset, str):
         try:
             # Find the tileset with the matching name
-            tileset_obj = next((t for t in tmxmap.tilesets if t.name == tileset), None)
+            tileset_obj = cast(
+                TiledTileset,
+                next((t for t in tmxmap.tilesets if t.name == tileset), None),
+            )
         except (AttributeError, TypeError) as e:
             msg = f"Error finding tileset: {e}"
             logger.debug(msg)
@@ -318,7 +326,7 @@ def build_rects(
 
 
 def simplify(
-    all_points: list[PointLike],
+    all_points: Sequence[PointLike],
     tilewidth: int,
     tileheight: int,
 ) -> list[pygame.Rect]:

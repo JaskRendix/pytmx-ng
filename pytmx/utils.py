@@ -28,18 +28,18 @@ import gzip
 import struct
 import zlib
 from base64 import b64decode
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from logging import getLogger
 from math import cos, radians, sin
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 logger = getLogger(__name__)
 
 try:
-    import zstd
+    import zstd as zstd_module
 except ImportError:
     logger.warning("zstd compression is not installed. Disabling zstd support.")
-    zstd = None
+    zstd_module = None
 
 from .constants import (
     GID_MASK,
@@ -53,7 +53,9 @@ from .constants import (
 )
 
 
-def default_image_loader(filename: str, flags, **kwargs):
+def default_image_loader(
+    filename: str, flags: Any, **kwargs: Any
+) -> Callable[[Any, Any], tuple[str, Any, Any]]:
     """Return a lazy image loader that carries filename, rect, and flags.
 
     This default loader allows loading a map without actually decoding images.
@@ -62,7 +64,7 @@ def default_image_loader(filename: str, flags, **kwargs):
     requested by the caller.
     """
 
-    def load(rect=None, flags=None):
+    def load(rect: Any = None, flags: Any = None) -> tuple[str, Any, Any]:
         return filename, rect, flags
 
     return load
@@ -105,8 +107,8 @@ def unpack_gids(
         elif compression == "zlib":
             data = zlib.decompress(data)
         elif compression == "zstd":
-            if zstd:
-                data = zstd.decompress(data)
+            if zstd_module:
+                data = zstd_module.decompress(data)
             else:
                 raise ValueError("zstd compression is not installed.")
         elif compression:
@@ -151,13 +153,11 @@ def rotate(
     """Rotate a sequence of points around an origin by angle degrees."""
     sin_t = sin(radians(angle))
     cos_t = cos(radians(angle))
-    new_points = list()
+    new_points = []
     for point in points:
-        p = (
-            origin.x + (cos_t * (point.x - origin.x) - sin_t * (point.y - origin.y)),
-            origin.y + (sin_t * (point.x - origin.x) + cos_t * (point.y - origin.y)),
-        )
-        new_points.append(p)
+        x = origin.x + (cos_t * (point.x - origin.x) - sin_t * (point.y - origin.y))
+        y = origin.y + (sin_t * (point.x - origin.x) + cos_t * (point.y - origin.y))
+        new_points.append(Point(x, y))
     return new_points
 
 
@@ -185,8 +185,8 @@ def decode_chunk_data(
         elif compression == "gzip":
             raw_data = gzip.decompress(raw_data)
         elif compression == "zstd":
-            if zstd:
-                raw_data = zstd.decompress(raw_data)
+            if zstd_module:
+                raw_data = zstd_module.decompress(raw_data)
             else:
                 raise ValueError("zstd compression is not installed.")
         elif compression:

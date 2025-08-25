@@ -19,7 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Optional, Self
 from xml.etree import ElementTree
 
 from .constants import Point
@@ -47,19 +47,19 @@ class TiledObject(TiledElement):
         self.parent = parent
 
         # defaults from the specification
-        self.id = 0
-        self.name = None
-        self.type = None
-        self.object_type = "rectangle"
-        self.x = 0
-        self.y = 0
-        self.width = 0
-        self.height = 0
-        self.rotation = 0
-        self.gid = 0
-        self.visible = 1
+        self.id: int = 0
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
+        self.object_type: str = "rectangle"
+        self.x: int = 0
+        self.y: int = 0
+        self.width: int = 0
+        self.height: int = 0
+        self.rotation: int = 0
+        self.gid: int = 0
+        self.visible: bool = True
         self.closed = True
-        self.template = None
+        self.template: Optional[str] = None
         self.custom_types = custom_types
 
         self.parse_xml(node)
@@ -83,9 +83,12 @@ class TiledObject(TiledElement):
             TiledObject: The parsed TiledObject layer.
         """
 
-        def read_points(text) -> tuple[tuple[float, float]]:
+        def read_points(text: str) -> tuple[tuple[float, float], ...]:
             """Parse a text string of float tuples and return [(x,...),...]"""
-            return tuple(tuple(map(float, i.split(","))) for i in text.split())
+            return tuple(
+                (float(x), float(y))
+                for x, y in (point.split(",") for point in text.split())
+            )
 
         self._set_properties(node, self.custom_types)
 
@@ -95,7 +98,7 @@ class TiledObject(TiledElement):
             self.gid = self.parent.register_gid_check_flags(self.gid)
 
         points = None
-        node_handlers = {
+        node_handlers: dict[str, dict[str, Any]] = {
             "polygon": {
                 "type": "polygon",
                 "points_attr": "points",
@@ -161,9 +164,9 @@ class TiledObject(TiledElement):
     def apply_transformations(self) -> list[Point]:
         """Return all points for object, taking in account rotation."""
         if hasattr(self, "points"):
-            return rotate(self.points, self, self.rotation)
+            return rotate(self.points, Point(self.x, self.y), self.rotation)
         else:
-            return rotate(self.as_points, self, self.rotation)
+            return rotate(self.as_points, Point(self.x, self.y), self.rotation)
 
     @property
     def as_points(self) -> list[Point]:
