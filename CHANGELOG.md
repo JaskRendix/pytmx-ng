@@ -8,6 +8,7 @@ Semantic Versioning.
 ## [Unreleased]
 
 - Closed PRs:
+  - #22: Support for Infinite TMX Maps via Chunk Stitching (by @JaskRendix) — https://github.com/pnearing/pytmx-ng/pull/22
   - #21: Refactor TiledObjectGroup to Use Internal List (by @JaskRendix) — https://github.com/pnearing/pytmx-ng/pull/21
   - #20: Refactor TiledTileset XML Parsing (by @JaskRendix) — https://github.com/pnearing/pytmx-ng/pull/20
   - #19: Map changes — refactor tile methods and update get_tile_image_by_gid API (by @pnearing) — https://github.com/pnearing/pytmx-ng/pull/19
