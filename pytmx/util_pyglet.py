@@ -24,7 +24,7 @@ from typing import Any, Callable, Optional
 logger = logging.getLogger(__name__)
 
 try:
-    import pyglet
+    import pyglet  # type: ignore
 except ImportError:
     logger.error("cannot import pyglet (is it installed?)")
     raise
@@ -104,7 +104,7 @@ def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
     return 0.0, flipped_h, flipped_v
 
 
-def load_pyglet(filename: str, *args: Any, **kwargs) -> TiledMap:
+def load_pyglet(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
     kwargs["image_loader"] = pyglet_image_loader
     kwargs["invert_y"] = True
     return TiledMap(filename, *args, **kwargs)

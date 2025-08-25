@@ -81,11 +81,11 @@ def pygame_sd2_image_loader(
     if colorkey:
         if isinstance(colorkey, str):
             if not colorkey.startswith("#") and len(colorkey) in (6, 8):
-                colorkey = pygame.Color(f"#{colorkey}")
+                colorkey = tuple(pygame.Color(f"#{colorkey}"))[:3]  # type: ignore
             else:
-                colorkey = pygame.Color(colorkey)
+                colorkey = tuple(pygame.Color(colorkey))[:3]  # type: ignore
         elif isinstance(colorkey, tuple) and 3 <= len(colorkey) <= 4:
-            colorkey = pygame.Color(colorkey)
+            colorkey = tuple(pygame.Color(colorkey))[:3]  # type: ignore
         else:
             logger.error("Invalid colorkey")
             raise ValueError("Invalid colorkey")

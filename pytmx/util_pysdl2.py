@@ -44,7 +44,7 @@ def pysdl2_image_loader(
     colorkey: Optional[ColorLike] = None,
     **kwargs: Any,
 ) -> Callable[[Optional[tuple[int, int, int, int]], Optional[TileFlags]], Any]:
-    def convert(surface):
+    def convert(surface: sdl2.SDL_Surface) -> sdl2.SDL_Texture:
         texture_ = sdl2.SDL_CreateTextureFromSurface(renderer.renderer, surface)
         sdl2.SDL_SetTextureBlendMode(texture_, sdl2.SDL_BLENDMODE_BLEND)
         sdl2.SDL_FreeSurface(surface)
@@ -54,15 +54,18 @@ def pysdl2_image_loader(
         rect: Optional[tuple[int, int, int, int]] = None,
         flags: Optional[TileFlags] = None,
     ) -> Any:
+        flip = 0
         if rect:
             try:
-                flip = 0
-                if flags.flipped_horizontally:
-                    flip |= sdl2.SDL_FLIP_HORIZONTAL
-                if flags.flipped_vertically:
-                    flip |= sdl2.SDL_FLIP_VERTICAL
-                if flags.flipped_diagonally:
-                    flip |= 4
+                if flags:
+                    if flags.flipped_horizontally:
+                        flip |= sdl2.SDL_FLIP_HORIZONTAL
+                    if flags.flipped_vertically:
+                        flip |= sdl2.SDL_FLIP_VERTICAL
+                    if flags.flipped_diagonally:
+                        flip |= (
+                            4  # SDL2 doesn't define diagonal flip, so this is custom
+                        )
 
                 rect = sdl2.rect.SDL_Rect(*rect)
                 return texture, rect, flip
@@ -71,13 +74,13 @@ def pysdl2_image_loader(
                 logger.error("Tile bounds outside bounds of tileset image")
                 raise
         else:
-            return texture, None, 0
+            return texture, None, flip
 
     image = sdl2.ext.load_image(filename)
 
-    if colorkey:
-        colorkey = sdl2.ext.string_to_color("#" + colorkey)
-        key = sdl2.SDL_MapRGB(image.format, *colorkey[:3])
+    if isinstance(colorkey, str):
+        color = sdl2.ext.string_to_color("#" + colorkey)
+        key = sdl2.SDL_MapRGB(image.format, *color[:3])
         sdl2.SDL_SetColorKey(image, sdl2.SDL_TRUE, key)
 
     texture = convert(image)

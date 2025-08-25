@@ -42,7 +42,7 @@ class TiledElement(ABC):
                 to have the same name as class attributes.
         """
         self._allow_duplicate_names = allow_duplicate_names
-        self.properties = dict()
+        self.properties: dict[str, Any] = dict()
 
     @classmethod
     def from_xml_string(cls, xml_string: str) -> Self:

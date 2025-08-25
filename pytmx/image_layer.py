@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Optional, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -35,14 +35,14 @@ class TiledImageLayer(TiledElement):
     def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         super().__init__()
         self.parent = parent
-        self.source = None
-        self.trans = None
-        self.gid = 0
+        self.source: Optional[str] = None
+        self.trans: Optional[str] = None
+        self.gid: int = 0
 
         # defaults from the specification
-        self.name = None
-        self.opacity = 1
-        self.visible = 1
+        self.name: Optional[str] = None
+        self.opacity: float = 1.0
+        self.visible: bool = True
 
         self.parse_xml(node)
 
@@ -65,10 +65,14 @@ class TiledImageLayer(TiledElement):
             TiledImageLayer: The parsed TiledImageLayer layer.
         """
         self._set_properties(node)
-        self.name = node.get("name", None)
-        self.opacity = node.get("opacity", self.opacity)
-        self.visible = node.get("visible", self.visible)
+
+        self.name = node.get("name")
+        self.opacity = float(node.get("opacity", self.opacity))
+        self.visible = bool(int(node.get("visible", int(self.visible))))
+
         image_node = node.find("image")
-        self.source = image_node.get("source", None)
-        self.trans = image_node.get("trans", None)
+        if image_node is not None:
+            self.source = image_node.get("source")
+            self.trans = image_node.get("trans")
+
         return self

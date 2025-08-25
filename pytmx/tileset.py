@@ -21,7 +21,7 @@ Tiled Tileset parser and model.
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Optional, Self
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
@@ -52,24 +52,24 @@ class TiledTileset(TiledElement):
         """
         super().__init__()
         self.parent = parent
-        self.offset = (0, 0)
-        self.tileset_source = None
+        self.offset: tuple[int, int] = (0, 0)
+        self.tileset_source: Optional[str] = None
 
         # defaults from the specification
-        self.firstgid = 0
-        self.source = None
-        self.name = None
-        self.tilewidth = 0
-        self.tileheight = 0
-        self.spacing = 0
-        self.margin = 0
-        self.tilecount = 0
-        self.columns = 0
+        self.firstgid: int = 0
+        self.source: Optional[str] = None
+        self.name: Optional[str] = None
+        self.tilewidth: int = 0
+        self.tileheight: int = 0
+        self.spacing: int = 0
+        self.margin: int = 0
+        self.tilecount: int = 0
+        self.columns: int = 0
 
         # image properties
-        self.trans = None
-        self.width = 0
-        self.height = 0
+        self.trans: Optional[str] = None
+        self.width: int = 0
+        self.height: int = 0
 
         self.parse_xml(node)
 
@@ -77,11 +77,8 @@ class TiledTileset(TiledElement):
         """
         Resolve a path relative to either the TMX or TSX file, but keep it relative.
         """
-        base = os.path.dirname(
-            self.tileset_source
-            if relative_to_source and self.tileset_source
-            else self.parent.filename
-        )
+        base_path = self.tileset_source if relative_to_source else self.parent.filename
+        base = os.path.dirname(base_path or "")
         resolved = os.path.join(base, path)
         logger.debug(f"Resolved path: {resolved}")
         return resolved
@@ -103,8 +100,10 @@ class TiledTileset(TiledElement):
         """
         frames = []
         for frame in anim_node.findall("frame"):
-            duration = int(frame.get("duration"))
-            gid = self.parent.register_gid(int(frame.get("tileid")) + self.firstgid)
+            duration = int(frame.get("duration") or 0)
+            gid = self.parent.register_gid(
+                int(frame.get("tileid") or 0) + self.firstgid
+            )
             frames.append(AnimationFrame(gid, duration))
             logger.debug(
                 f"Parsed animation frame: tileid={frame.get('tileid')}, duration={duration}, gid={gid}"
@@ -123,7 +122,7 @@ class TiledTileset(TiledElement):
             raise ValueError(msg)
 
         self.tileset_source = source
-        self.firstgid = int(node.get("firstgid"))
+        self.firstgid = int(node.get("firstgid") or 0)
         logger.debug(f"External tileset detected: {source}, firstgid={self.firstgid}")
 
         resolved_path = self._resolve_path(source, relative_to_source=False)
@@ -151,14 +150,14 @@ class TiledTileset(TiledElement):
             image_node = child.find("image")
             if image_node is not None:
                 tile_source = image_node.get("source")
-                if is_external:
+                if tile_source and is_external:
                     tile_source = self._resolve_path(
                         tile_source, relative_to_source=True
                     )
                 props["source"] = tile_source
                 props["trans"] = image_node.get("trans", None)
-                props["width"] = int(image_node.get("width"))
-                props["height"] = int(image_node.get("height"))
+                props["width"] = int(image_node.get("width") or 0)
+                props["height"] = int(image_node.get("height") or 0)
                 logger.debug(
                     f"Tile image parsed: source={tile_source}, size={props['width']}x{props['height']}"
                 )
@@ -184,19 +183,19 @@ class TiledTileset(TiledElement):
         tile_offset_node = node.find("tileoffset")
         if tile_offset_node is not None:
             self.offset = (
-                int(tile_offset_node.get("x", 0)),
-                int(tile_offset_node.get("y", 0)),
+                int(tile_offset_node.get("x") or 0),
+                int(tile_offset_node.get("y") or 0),
             )
             logger.debug(f"Parsed tileoffset: {self.offset}")
 
         image_node = node.find("image")
         if image_node is not None:
             self.source = image_node.get("source")
-            if self.tileset_source:
+            if self.source and self.tileset_source:
                 self.source = self._resolve_path(self.source, relative_to_source=True)
             self.trans = image_node.get("trans", None)
-            self.width = int(image_node.get("width"))
-            self.height = int(image_node.get("height"))
+            self.width = int(image_node.get("width") or 0)
+            self.height = int(image_node.get("height") or 0)
             logger.debug(
                 f"Tileset image node parsed: source={self.source}, size={self.width}x{self.height}, trans={self.trans}"
             )

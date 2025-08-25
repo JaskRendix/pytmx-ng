@@ -19,7 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled group layer model and parser.
 """
 
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Optional, Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -38,8 +38,8 @@ class TiledGroupLayer(TiledElement):
         """
         super().__init__()
         self.parent = parent
-        self.name = None
-        self.visible = 1
+        self.name: Optional[str] = None
+        self.visible: bool = True
         self.parse_xml(node)
 
     def parse_xml(self, node: ElementTree.Element) -> Self:
@@ -50,5 +50,5 @@ class TiledGroupLayer(TiledElement):
             TiledGroupLayer: The parsed TiledGroupLayer layer.
         """
         self._set_properties(node)
-        self.name = node.get("name", None)
+        self.name = node.get("name") or ""
         return self

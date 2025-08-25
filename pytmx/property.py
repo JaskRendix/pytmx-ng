@@ -48,4 +48,4 @@ class TiledProperty(TiledElement):
         Returns:
             TiledProperty: The parsed TiledProperty layer.
         """
-        pass
+        return self

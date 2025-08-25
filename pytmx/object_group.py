@@ -47,14 +47,14 @@ class TiledObjectGroup(TiledElement):
         self._objects: list[TiledObject] = []
 
         # defaults from the specification
-        self.name = None
-        self.color = None
-        self.opacity = 1
-        self.visible = 1
-        self.offsetx = 0
-        self.offsety = 0
+        self.name: Optional[str] = None
+        self.color: Optional[str] = None
+        self.opacity: float = 1.0
+        self.visible: bool = True
+        self.offsetx: int = 0
+        self.offsety: int = 0
         self.custom_types = custom_types
-        self.draworder = "index"
+        self.draworder: str = "index"
 
         self.parse_xml(node)
 
@@ -68,7 +68,7 @@ class TiledObjectGroup(TiledElement):
         self._set_properties(node, self.custom_types)
 
         self._objects.extend(
-            TiledObject(self.parent, child, self.custom_types)
+            TiledObject(self.parent, child, self.custom_types or {})
             for child in node.findall("object")
         )
 
