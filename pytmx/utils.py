@@ -159,3 +159,51 @@ def rotate(
         )
         new_points.append(p)
     return new_points
+
+
+def decode_chunk_data(
+    text: str, encoding: Optional[str], compression: Optional[str]
+) -> tuple[list[int], bytes]:
+    """
+    Decode and decompress chunk data from a Tiled map.
+
+    Args:
+        text: The raw text content of the chunk.
+        encoding: The encoding format (e.g., "base64", "csv").
+        compression: The compression method (e.g., "zlib", "gzip", "zstd").
+
+    Returns:
+        A tuple of (gids, raw_data), where:
+            - gids is a list of tile GIDs
+            - raw_data is the binary representation used to unpack GIDs
+    """
+    if encoding == "base64":
+        raw_data = b64decode(text.strip())
+
+        if compression == "zlib":
+            raw_data = zlib.decompress(raw_data)
+        elif compression == "gzip":
+            raw_data = gzip.decompress(raw_data)
+        elif compression == "zstd":
+            if zstd:
+                raw_data = zstd.decompress(raw_data)
+            else:
+                raise ValueError("zstd compression is not installed.")
+        elif compression:
+            raise ValueError(f"Unsupported compression: {compression}")
+
+        fmt = "<%dL" % (len(raw_data) // 4)
+        gids = list(struct.unpack(fmt, raw_data))
+
+    elif encoding == "csv":
+        gids = [int(i) for i in text.strip().split(",")]
+        raw_data = b""  # CSV has no binary representation
+
+    elif encoding:
+        raise ValueError(f"Unsupported encoding: {encoding}")
+
+    else:
+        gids = []
+        raw_data = b""
+
+    return gids, raw_data
