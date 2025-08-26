@@ -28,6 +28,10 @@ classifiers = [
         "Topic :: Software Development :: Libraries :: pygame",
 ]
 requires-python = ">=3.9"
+dependencies = [
+    # Backport of typing.Self for Python 3.9/3.10
+    "typing_extensions>=4.3"
+]
 
 [project.urls]
 Homepage = "https://github.com/pnearing/pytmx-ng"

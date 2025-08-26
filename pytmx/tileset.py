@@ -21,7 +21,11 @@ Tiled Tileset parser and model.
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional, Self
+from typing import TYPE_CHECKING, Any, Optional
+try:  # Python 3.11+
+    from typing import Self  # type: ignore
+except Exception:  # Python < 3.11
+    from typing_extensions import Self  # type: ignore
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 

@@ -32,7 +32,11 @@ from collections.abc import Callable, Iterable
 from itertools import chain, product
 from logging import getLogger
 from operator import attrgetter
-from typing import Any, Iterator, Optional, Protocol, Self, Union
+from typing import Any, Iterator, Optional, Protocol, Union
+try:  # Python 3.11+
+    from typing import Self  # type: ignore
+except Exception:  # Python < 3.11
+    from typing_extensions import Self  # type: ignore
 from xml.etree import ElementTree
 
 # --- internal imports -------------------------------------------------------
