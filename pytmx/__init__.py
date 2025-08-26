@@ -18,6 +18,7 @@ License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import logging
+from importlib.metadata import PackageNotFoundError, version
 
 from .pytmx import *
 
@@ -28,4 +29,9 @@ try:
 except ImportError:
     logger.debug("cannot import pygame tools")
 
-__version__ = (3, 32)
+# Expose the installed package version. When running from a source checkout
+# without installed metadata, fall back to a sentinel string.
+try:
+    __version__ = version("pytmx-ng")
+except PackageNotFoundError:
+    __version__ = "0+unknown"
