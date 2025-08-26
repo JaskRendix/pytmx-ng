@@ -71,6 +71,7 @@ News
 
 | Date     | Changes
 | -------- | --------
+| 08/26/25 | Added support for templates.
 | 08/25/25 | Added support for infinite maps via chunk stitching.
 | 08/18/25 | Forked from pytmx. Added expanded objects, points for rectangles, and fixed rotated co-ordinates.
 | 06/13/23 | Fix flipped tile objects.
