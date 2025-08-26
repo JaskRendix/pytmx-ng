@@ -22,12 +22,21 @@ Base element types shared by pytmx models.
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Any, Optional, Self
+from typing import Any, Optional, Type
 from xml.etree import ElementTree
 
 from .properties import parse_properties, types
 
 logger = getLogger(__name__)
+
+
+# NOTE:
+# Use a compatibility import for Self: available in typing on 3.11+, and in
+# typing_extensions for Python 3.9/3.10.
+try:  # Python 3.11+
+    from typing import Self  # type: ignore
+except Exception:  # Python < 3.11
+    from typing_extensions import Self  # type: ignore
 
 
 class TiledElement(ABC):

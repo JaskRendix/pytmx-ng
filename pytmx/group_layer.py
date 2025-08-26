@@ -19,7 +19,11 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled group layer model and parser.
 """
 
-from typing import TYPE_CHECKING, Optional, Self
+from typing import TYPE_CHECKING, Optional
+try:  # Python 3.11+
+    from typing import Self  # type: ignore
+except Exception:  # Python < 3.11
+    from typing_extensions import Self  # type: ignore
 from xml.etree import ElementTree
 
 from .element import TiledElement
