@@ -70,7 +70,14 @@ def count_colorkey_pixels(surface: pygame.Surface, colorkey: ColorLike) -> int:
             r, g, b = colorkey[:3]
         else:
             raise TypeError("colorkey must be a tuple or list of RGB values")
-        return int(((pixel_array[:, :, 0] == r) & ...).sum())
+        # Build a boolean mask where all three RGB channels match the target color.
+        # pixels3d() returns a view; we're only reading it and discarding immediately.
+        mask = (
+            (pixel_array[:, :, 0] == r)
+            & (pixel_array[:, :, 1] == g)
+            & (pixel_array[:, :, 2] == b)
+        )
+        return int(mask.sum())
     except ImportError:
         # Slow fallback method
         width, height = surface.get_size()

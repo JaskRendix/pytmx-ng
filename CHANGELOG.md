@@ -7,6 +7,7 @@ Semantic Versioning.
 
 ## [Unreleased]
 - Closed PRs:
+  - #25: Template Support and Shape Parsing Enhancements (by @JaskRendix) — merged 2025-08-26 — https://github.com/pnearing/pytmx-ng/pull/25
   - #23: Improve Type Safety via mypy --strict Compliance (by @JaskRendix) — merged 2025-08-25 — https://github.com/pnearing/pytmx-ng/pull/23
 
 ## [3.35.0] - 2025-08-25
