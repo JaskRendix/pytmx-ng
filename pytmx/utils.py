@@ -25,6 +25,7 @@ classes and can be reused across the package.
 from __future__ import annotations
 
 import gzip
+import math
 import struct
 import zlib
 from base64 import b64decode
@@ -68,6 +69,18 @@ def default_image_loader(
         return filename, rect, flags
 
     return load
+
+
+def get_rotation_from_flags(flags: TileFlags) -> int:
+    """Determine the rotation angle from TileFlags."""
+    if flags.flipped_diagonally:
+        if flags.flipped_horizontally and not flags.flipped_vertically:
+            return 90
+        elif flags.flipped_horizontally and flags.flipped_vertically:
+            return 180
+        elif not flags.flipped_horizontally and flags.flipped_vertically:
+            return 270
+    return 0
 
 
 def decode_gid(raw_gid: int) -> tuple[int, TileFlags]:
@@ -207,3 +220,27 @@ def decode_chunk_data(
         raw_data = b""
 
     return gids, raw_data
+
+
+def generate_rectangle_points(
+    x: float, y: float, width: float, height: float
+) -> tuple[Point, ...]:
+    return (
+        Point(x, y),
+        Point(x + width, y),
+        Point(x + width, y + height),
+        Point(x, y + height),
+    )
+
+
+def generate_ellipse_points(
+    x: float, y: float, width: float, height: float, segments: int = 16
+) -> list[Point]:
+    cx = x + width / 2
+    cy = y + height / 2
+    rx = width / 2
+    ry = height / 2
+    return [
+        Point(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
+        for theta in [2 * math.pi * i / segments for i in range(segments)]
+    ]

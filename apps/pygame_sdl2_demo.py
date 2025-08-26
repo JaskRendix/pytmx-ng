@@ -96,6 +96,15 @@ class SimpleTest:
         for obj in self.map_renderer.tmx_data.objects:
             logger.info("Object: %s", obj)
             logger.debug("Properties: %s", vars(obj))
+            if obj.template:
+                logger.info("  ↳ Template: %s", obj.template)
+
+                base_dir = Path(obj.parent.filename).parent
+                full_path = base_dir / obj.template
+                template_obj = obj.parent.templates.get(str(full_path))
+
+                inherited_name = getattr(template_obj, "name", None)
+                logger.debug("  ↳ Inherited from: %s", inherited_name or "<unknown>")
 
         logger.info("GID (tile) properties:")
         for k, v in self.map_renderer.tmx_data.tile_properties.items():

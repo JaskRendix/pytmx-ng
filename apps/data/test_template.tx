@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="poly_template" type="pymunktmx_poly">
+  <polygon points="0,0 70,-70 140,-70 280,0 210,70 70,70"/>
+ </object>
+</template>
