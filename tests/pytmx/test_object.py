@@ -126,8 +126,9 @@ class TestTiledObject(unittest.TestCase):
     def test_no_text_node(self):
         node = self.create_node()
         obj = TiledObject(self.mock_parent, node, self.custom_types)
-        with self.assertRaises(AttributeError):
-            _ = obj.text
+
+        self.assertEqual(obj.object_type, "rectangle")  # or whatever default
+        self.assertIsNone(obj.text)
 
     def test_malformed_points(self):
         polygon = Element("polygon", {"points": "0,0 10,a 20"})
@@ -144,3 +145,189 @@ class TestTiledObject(unittest.TestCase):
             obj.rotation = angle
             points = obj.apply_transformations()
             self.assertEqual(len(points), 4)
+
+    def test_template_basic_merge(self):
+        template_node = self.create_node(
+            attrib={
+                "id": "99",
+                "x": "5",
+                "y": "5",
+                "width": "100",
+                "height": "200",
+                "rotation": "0",
+                "type": "template_type",
+                "name": "template_name",
+            }
+        )
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "rectangle"
+        template_obj.properties = {"speed": 10}
+
+        self.mock_parent.templates = {"test_template.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(
+            attrib={
+                "template": "test_template.tx",
+                "id": "1",
+                "x": "10",
+                "y": "20",
+                "width": "30",
+                "height": "40",
+                "rotation": "45",
+                "type": "local_type",
+                "name": "local_name",
+            }
+        )
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.id, 1)
+        self.assertEqual(obj.name, "local_name")
+        self.assertEqual(obj.type, "local_type")
+        self.assertEqual(obj.x, 10)
+        self.assertEqual(obj.y, 20)
+        self.assertEqual(obj.width, 30)
+        self.assertEqual(obj.height, 40)
+        self.assertEqual(obj.rotation, 45)
+        self.assertEqual(obj.object_type, "rectangle")
+        self.assertIn("speed", obj.properties)
+        self.assertEqual(obj.properties["speed"], 10)
+
+    def test_template_polygon_override(self):
+        template_node = self.create_node(
+            attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
+        )
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "rectangle"
+        template_obj.properties = {}
+
+        self.mock_parent.templates = {"test_template.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        polygon = Element("polygon", {"points": "0,0 10,0 10,10"})
+        node = self.create_node(
+            attrib={"template": "test_template.tx"}, children=[polygon]
+        )
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.object_type, "polygon")
+        self.assertEqual(len(obj.points), 3)
+
+    def test_template_missing_file(self):
+        self.mock_parent._load_template = lambda path: None
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(attrib={"template": "missing.tx"})
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertIsInstance(obj, TiledObject)
+        self.assertEqual(obj.object_type, "rectangle")
+
+    def test_template_fallback_values(self):
+        template_node = self.create_node(
+            attrib={"x": "50", "y": "60", "width": "70", "height": "80"}
+        )
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "rectangle"
+
+        self.mock_parent.templates = {"fallback.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(attrib={"template": "fallback.tx"})
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.x, 50)
+        self.assertEqual(obj.y, 60)
+        self.assertEqual(obj.width, 70)
+        self.assertEqual(obj.height, 80)
+
+    def test_template_shape_override(self):
+        template_node = self.create_node()
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "ellipse"
+
+        self.mock_parent.templates = {"shape.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        polyline = Element("polyline", {"points": "0,0 10,10"})
+        node = self.create_node(attrib={"template": "shape.tx"}, children=[polyline])
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.object_type, "polyline")
+        self.assertEqual(len(obj.points), 2)
+
+    def test_template_text_inheritance(self):
+        text = Element("text")
+        text.text = "Template Text"
+        text.set("fontfamily", "Courier")
+        text.set("pixelsize", "20")
+        template_node = self.create_node(children=[text])
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "text"
+
+        self.mock_parent.templates = {"text.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(attrib={"template": "text.tx"})
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.object_type, "text")
+        self.assertEqual(obj.text, "Template Text")
+        self.assertEqual(obj.font_family, "Courier")
+        self.assertEqual(obj.pixel_size, 20)
+
+    def test_template_custom_properties(self):
+        template_node = self.create_node()
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.properties = {"health": 100, "speed": 5}
+
+        self.mock_parent.templates = {"props.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(attrib={"template": "props.tx"})
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.properties["health"], 100)
+        self.assertEqual(obj.properties["speed"], 5)
+
+    def test_template_text_shape_fallback(self):
+        text = Element("text")
+        text.text = "Template Text"
+        text.set("fontfamily", "Courier")
+        text.set("pixelsize", "20")
+
+        template_node = self.create_node(children=[text])
+        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
+        template_obj.object_type = "text"
+        template_obj.node = template_node  # Required for fallback parsing
+
+        self.mock_parent.templates = {"text_template.tx": template_obj}
+        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
+        self.mock_parent.filename = "maps/map.tmx"
+
+        node = self.create_node(attrib={"template": "text_template.tx"})
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        self.assertEqual(obj.object_type, "text")
+        self.assertEqual(obj.text, "Template Text")
+        self.assertEqual(obj.font_family, "Courier")
+        self.assertEqual(obj.pixel_size, 20)
+
+    def test_as_ellipse_property(self):
+        ellipse = Element("ellipse")
+        node = self.create_node(
+            attrib={"x": "10", "y": "20", "width": "100", "height": "50"},
+            children=[ellipse],
+        )
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+
+        center, rx, ry = obj.as_ellipse
+        self.assertEqual(center, Point(60, 45))
+        self.assertEqual(rx, 50)
+        self.assertEqual(ry, 25)

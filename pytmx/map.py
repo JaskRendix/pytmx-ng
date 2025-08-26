@@ -46,7 +46,7 @@ from .object import TiledObject
 from .object_group import TiledObjectGroup
 from .tile_layer import TiledTileLayer
 from .tileset import TiledTileset
-from .utils import decode_gid, default_image_loader
+from .utils import decode_gid, default_image_loader, get_rotation_from_flags
 
 logger = getLogger(__name__)
 
@@ -98,6 +98,8 @@ class TiledMap(TiledElement):
         self.layers: list[TiledLayer] = []
         # TiledTileset objects
         self.tilesets: list[TiledTileset] = []
+        # Templates (.tx)
+        self.templates: dict[str, TiledObject] = {}
         # tiles that have properties
         self.tile_properties: dict[int, dict[str, str]] = {}
         self.layernames: dict[str, TiledLayer] = {}
@@ -231,9 +233,7 @@ class TiledMap(TiledElement):
         for o in [o for o in self.objects if o.gid]:
             # Decode rotation and flipping flags from the GID
             _, flags = decode_gid(o.gid)
-            rotation = self.get_rotation_from_flags(
-                flags
-            )  # Get rotation based on flags
+            rotation = get_rotation_from_flags(flags)  # Get rotation based on flags
 
             # gids might also have properties assigned to them
             # in that case, assign the gid properties to the object as well
@@ -256,17 +256,6 @@ class TiledMap(TiledElement):
 
         self.reload_images()
         return self
-
-    def get_rotation_from_flags(self, flags: TileFlags) -> int:
-        """Determine the rotation angle from TileFlags."""
-        if flags.flipped_diagonally:
-            if flags.flipped_horizontally and not flags.flipped_vertically:
-                return 90
-            elif flags.flipped_horizontally and flags.flipped_vertically:
-                return 180
-            elif not flags.flipped_horizontally and flags.flipped_vertically:
-                return 270
-        return 0
 
     def reload_images(self) -> None:
         """Load or reload the map images from disk.
@@ -725,6 +714,43 @@ class TiledMap(TiledElement):
             tuple[int, int]: The tile position.
         """
         return int(position[0] / self.tilewidth), int(position[1] / self.tileheight)
+
+    def _load_template(self, relative_path: str) -> TiledObject:
+        """Loads a TiledObject template from a relative file path and caches it."""
+
+        if self.filename is None:
+            raise ValueError("Cannot resolve template path: 'self.filename' is None")
+
+        base_dir = os.path.dirname(self.filename)
+        full_path = os.path.join(base_dir, relative_path)
+
+        logger.debug(
+            f"Resolving template path: base_dir={base_dir}, relative_path={relative_path}, full_path={full_path}"
+        )
+
+        if full_path in self.templates:
+            logger.debug(f"Template already cached: {full_path}")
+            return self.templates[full_path]
+
+        try:
+            logger.debug(f"Parsing template file: {full_path}")
+            root_node = ElementTree.parse(full_path).getroot()
+
+            object_node = root_node.find("object")
+            if object_node is None:
+                logger.error(f"No <object> node found in template: {full_path}")
+                raise ValueError(f"No <object> node found in template: {full_path}")
+
+            logger.debug(f"<object> node found, initializing TiledObject")
+            temp_object = TiledObject(self, object_node, self.custom_types)
+
+            self.templates[full_path] = temp_object
+            logger.debug(f"Template loaded and cached: {full_path}")
+            return temp_object
+
+        except (OSError, ElementTree.ParseError, ValueError) as e:
+            logger.error(f"Error loading template file: {full_path} — {e}")
+            raise e
 
     @property
     def objectgroups(self) -> Iterable[TiledObjectGroup]:

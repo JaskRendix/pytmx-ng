@@ -24,7 +24,9 @@ from xml.etree import ElementTree
 
 from .constants import Point
 from .element import TiledElement
-from .utils import rotate
+from .shape import parse_shape_data
+from .template import apply_template_to_object
+from .utils import generate_rectangle_points, rotate
 
 if TYPE_CHECKING:
     from .map import TiledMap
@@ -45,6 +47,7 @@ class TiledObject(TiledElement):
     ) -> None:
         super().__init__()
         self.parent = parent
+        self.node = node  # Save for fallback shape parsing
 
         # defaults from the specification
         self.id: int = 0
@@ -62,6 +65,20 @@ class TiledObject(TiledElement):
         self.template: Optional[str] = None
         self.custom_types = custom_types
 
+        # Text
+        self.text: Optional[str] = None
+        self.font_family: str = "Sans Serif"
+        self.pixel_size: int = 16
+        self.wrap: bool = False
+        self.bold: bool = False
+        self.italic: bool = False
+        self.underline: bool = False
+        self.strike_out: bool = False
+        self.kerning: bool = True
+        self.h_align: str = "left"
+        self.v_align: str = "top"
+        self.color: str = "#000000FF"
+
         self.parse_xml(node)
 
     @property
@@ -76,87 +93,31 @@ class TiledObject(TiledElement):
         return None
 
     def parse_xml(self, node: ElementTree.Element) -> Self:
-        """
-        Parse a TiledObject layer from ElementTree xml node.
+        """Parse a TiledObject layer from ElementTree XML node."""
 
-        Returns:
-            TiledObject: The parsed TiledObject layer.
-        """
-
-        def read_points(text: str) -> tuple[tuple[float, float], ...]:
-            """Parse a text string of float tuples and return [(x,...),...]"""
-            return tuple(
-                (float(x), float(y))
-                for x, y in (point.split(",") for point in text.split())
-            )
-
+        self.name = node.get("name")
         self._set_properties(node, self.custom_types)
 
-        # Handle tile objects
         if self.gid:
             self.object_type = "tile"
             self.gid = self.parent.register_gid_check_flags(self.gid)
 
-        points = None
-        node_handlers: dict[str, dict[str, Any]] = {
-            "polygon": {
-                "type": "polygon",
-                "points_attr": "points",
-                "parse": read_points,
-                "closed": True,
-            },
-            "polyline": {
-                "type": "polyline",
-                "points_attr": "points",
-                "parse": read_points,
-                "closed": False,
-            },
-            "ellipse": {"type": "ellipse"},
-            "point": {"type": "point"},
-            "text": {"type": "text"},
-        }
+        self.template = node.get("template")
+        if self.template:
+            template_obj = self.parent._load_template(self.template)
+            if template_obj:
+                apply_template_to_object(self, node, template_obj, self.custom_types)
 
-        for node_name, handler in node_handlers.items():
-            subnode = node.find(node_name)
-            if subnode is not None:
-                self.object_type = handler["type"]
-
-                if node_name == "text":
-                    # Inline text property parsing
-                    setattr(self, "text", subnode.text)
-                    setattr(
-                        self, "font_family", subnode.get("fontfamily", "Sans Serif")
-                    )
-                    setattr(self, "pixel_size", int(subnode.get("pixelsize", 16)))
-                    setattr(self, "wrap", bool(subnode.get("wrap", False)))
-                    setattr(self, "bold", bool(subnode.get("bold", False)))
-                    setattr(self, "italic", bool(subnode.get("italic", False)))
-                    setattr(self, "underline", bool(subnode.get("underline", False)))
-                    setattr(self, "strike_out", bool(subnode.get("strikeout", False)))
-                    setattr(self, "kerning", bool(subnode.get("kerning", True)))
-                    setattr(self, "h_align", subnode.get("halign", "left"))
-                    setattr(self, "v_align", subnode.get("valign", "top"))
-                    setattr(self, "color", subnode.get("color", "#000000FF"))
-
-                if "points_attr" in handler:
-                    points = handler["parse"](subnode.get(handler["points_attr"]))
-                if "closed" in handler:
-                    self.closed = handler["closed"]
-                break
+        points = parse_shape_data(self, node)
 
         if points:
-            xs, ys = zip(*points)
+            xs, ys = zip(*[(p.x, p.y) for p in points])
             self.width = max(xs) - min(xs)
             self.height = max(ys) - min(ys)
-            self.points = tuple([Point(i[0] + self.x, i[1] + self.y) for i in points])
+            self.points = tuple(points)
         elif self.object_type == "rectangle":
-            self.points = tuple(
-                [
-                    Point(self.x, self.y),
-                    Point(self.x + self.width, self.y),
-                    Point(self.x + self.width, self.y + self.height),
-                    Point(self.x, self.y + self.height),
-                ]
+            self.points = generate_rectangle_points(
+                self.x, self.y, self.width, self.height
             )
 
         return self
@@ -179,3 +140,17 @@ class TiledObject(TiledElement):
                 (self.x + self.width, self.y),
             ]
         ]
+
+    @property
+    def as_ellipse(self) -> Optional[tuple[Point, float, float]]:
+        """Return center and radii of the ellipse, if applicable.
+
+        Returns:
+            Optional[tuple[Point, float, float]]: (center, radius_x, radius_y)
+        """
+        if self.object_type == "ellipse":
+            center = Point(self.x + self.width / 2, self.y + self.height / 2)
+            radius_x = self.width / 2
+            radius_y = self.height / 2
+            return (center, radius_x, radius_y)
+        return None
