@@ -22,10 +22,12 @@ Tiled Tileset parser and model.
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Optional
+
 try:  # Python 3.11+
     from typing import Self  # type: ignore
 except Exception:  # Python < 3.11
     from typing_extensions import Self  # type: ignore
+
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
@@ -173,11 +175,47 @@ class TiledTileset(TiledElement):
             props["frames"] = (
                 self._parse_animation_frames(anim) if anim is not None else []
             )
+            colliders = []
 
+            logger.debug(f"Object group parsed for tile ID {tiled_gid}")
             for objgrp_node in child.findall("objectgroup"):
-                objectgroup = TiledObjectGroup(self.parent, objgrp_node, None)
-                props["colliders"] = objectgroup
-                logger.debug(f"Object group parsed for tile ID {tiled_gid}")
+                for obj in objgrp_node.findall("object"):
+                    shape = "rectangle"
+                    collider = {
+                        "x": float(obj.get("x", 0)),
+                        "y": float(obj.get("y", 0)),
+                        "rotation": float(obj.get("rotation", 0) or 0),
+                        "width": 0.0,
+                        "height": 0.0,
+                        "type": shape,
+                        "points": [],
+                    }
+
+                    polygon_node = obj.find("polygon")
+                    if polygon_node is not None:
+                        points_str = polygon_node.get("points", "")
+                        collider["points"] = [
+                            tuple(map(float, p.strip().split(",")))
+                            for p in points_str.strip().split(" ")
+                        ]
+
+                    elif obj.find("ellipse") is not None:
+                        shape = "ellipse"
+                        collider["type"] = shape
+                        collider["width"] = float(obj.get("width", 0))
+                        collider["height"] = float(obj.get("height", 0))
+
+                    elif obj.find("point") is not None:
+                        shape = "point"
+                        collider["type"] = shape
+
+                    else:
+                        collider["width"] = float(obj.get("width", 0))
+                        collider["height"] = float(obj.get("height", 0))
+
+                    colliders.append(collider)
+
+            props["colliders"] = colliders
 
             for gid, flags in self.parent.map_gid2(tiled_gid + self.firstgid):
                 self.parent.set_tile_properties(gid, props)
