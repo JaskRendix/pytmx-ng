@@ -167,8 +167,17 @@ class SimpleTest:
             logger.info("%s\t%s", k, v)
 
         logger.info("Tile colliders:")
-        for k, v in self.renderer.tmx_data.get_tile_colliders():
-            logger.info("%s\t%s", k, list(v))
+        for k, colliders in self.renderer.tmx_data.get_tile_colliders():
+            if colliders:
+                logger.info(f"  GID {k}:")
+                for collider in colliders:
+                    center_x, center_y = collider.get_center()
+                    logger.info(
+                        "    - Type: %s, Center: (%d, %d)",
+                        collider.type,
+                        center_x,
+                        center_y,
+                    )
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw our map to some surface (probably the display)"""

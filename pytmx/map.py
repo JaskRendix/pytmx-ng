@@ -43,6 +43,7 @@ from xml.etree import ElementTree
 
 # --- internal imports -------------------------------------------------------
 from .class_type import TiledClassType
+from .collider import Collider
 from .constants import GID_TRANS_ROT, MapPoint, TileFlags, empty_flags
 from .element import TiledElement
 from .group_layer import TiledGroupLayer
@@ -684,18 +685,25 @@ class TiledMap(TiledElement):
         logger.debug(msg)
         raise ValueError(msg)
 
-    def get_tile_colliders(self) -> Iterable[tuple[int, list[dict[str, Any]]]]:
-        """Return iterator of (gid, dict) pairs of tiles with colliders.
+    def get_tile_colliders(self) -> Iterable[tuple[int, list[Collider]]]:
+        """Return iterator of (gid, Collider) pairs of tiles with colliders.
 
         Returns:
-            Iterable[Tuple[int, List[Dict]]]: The tile colliders.
+            Iterable[Tuple[int, List[Collider]]]: The tile colliders.
         """
         for gid, props in self.tile_properties.items():
             colliders = props.get("colliders")
-            if isinstance(colliders, list) and all(
-                isinstance(c, dict) for c in colliders
-            ):
-                yield gid, colliders
+            if isinstance(colliders, list):
+                collider_objects = []
+                for c in colliders:
+                    try:
+                        collider_objects.append(Collider(**c))
+                    except TypeError as e:
+                        logger.warning(
+                            f"Invalid collider data for GID {gid}: {c} — {e}"
+                        )
+                if collider_objects:
+                    yield gid, collider_objects
 
     def get_tile_flags_by_gid(self, gid: int) -> TileFlags:
         """Return the tile flags for this GID.
