@@ -20,17 +20,19 @@ Tiled object model and parser.
 """
 
 from typing import TYPE_CHECKING, Any, Optional
+
 try:  # Python 3.11+
     from typing import Self  # type: ignore
 except Exception:  # Python < 3.11
     from typing_extensions import Self  # type: ignore
+
 from xml.etree import ElementTree
 
 from .constants import Point
 from .element import TiledElement
 from .shape import parse_shape_data
 from .template import apply_template_to_object
-from .utils import generate_rectangle_points, rotate
+from .utils import generate_rectangle_points, is_convex, point_in_polygon, rotate
 
 if TYPE_CHECKING:
     from .map import TiledMap
@@ -135,6 +137,7 @@ class TiledObject(TiledElement):
 
     @property
     def as_points(self) -> list[Point]:
+        """Returns corner points of the object as a rectangle."""
         return [
             Point(*i)
             for i in [
@@ -158,3 +161,77 @@ class TiledObject(TiledElement):
             radius_y = self.height / 2
             return (center, radius_x, radius_y)
         return None
+
+    def get_bounding_box(self) -> tuple[int, int, int, int]:
+        """Calculates the axis-aligned bounding box of the object."""
+        rotated_points = self.apply_transformations()
+        xs = [p.x for p in rotated_points]
+        ys = [p.y for p in rotated_points]
+        return int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))
+
+    def collides_with_point(self, x: int, y: int) -> bool:
+        """Checks whether a point lies within the object."""
+        point = Point(x, y)
+
+        if self.object_type == "rectangle":
+            return point_in_polygon(point, self.apply_transformations())
+
+        elif self.object_type == "ellipse":
+            ellipse = self.as_ellipse
+            if ellipse:
+                center, rx, ry = ellipse
+                dx = x - center.x
+                dy = y - center.y
+                return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1
+
+        elif isinstance(self.points, tuple) and self.points:
+            return point_in_polygon(point, self.apply_transformations())
+
+        return False
+
+    def intersects_with_rect(self, other_rect: tuple[int, int, int, int]) -> bool:
+        """Checks whether the object intersects with a given rectangle."""
+        self_rect = self.get_bounding_box()
+        return (
+            self_rect[0] < other_rect[2]
+            and self_rect[2] > other_rect[0]
+            and self_rect[1] < other_rect[3]
+            and self_rect[3] > other_rect[1]
+        )
+
+    def intersects_with_object(self, other: "TiledObject") -> bool:
+        """Checks whether this object intersects with another TiledObject."""
+        return self.intersects_with_rect(other.get_bounding_box())
+
+    def intersects_with_polygon(self, other: "TiledObject") -> bool:
+        """Checks polygonal intersection using Separating Axis Theorem."""
+        poly1 = self.apply_transformations()
+        poly2 = other.apply_transformations()
+
+        if not is_convex(poly1) or not is_convex(poly2):
+            raise ValueError("SAT requires convex polygons.")
+
+        def get_axes(polygon: list[Point]) -> list[Point]:
+            axes = []
+            for i in range(len(polygon)):
+                p1 = polygon[i]
+                p2 = polygon[(i + 1) % len(polygon)]
+                edge = Point(p2.x - p1.x, p2.y - p1.y)
+                normal = Point(-edge.y, edge.x)  # Perpendicular
+                length = (normal.x**2 + normal.y**2) ** 0.5
+                axes.append(Point(normal.x / length, normal.y / length))
+            return axes
+
+        def project(polygon: list[Point], axis: Point) -> tuple[float, float]:
+            dots = [p.x * axis.x + p.y * axis.y for p in polygon]
+            return min(dots), max(dots)
+
+        axes = get_axes(poly1) + get_axes(poly2)
+
+        for axis in axes:
+            min1, max1 = project(poly1, axis)
+            min2, max2 = project(poly2, axis)
+            if max1 < min2 or max2 < min1:
+                return False  # Found a separating axis
+
+        return True  # No separating axis found
