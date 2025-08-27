@@ -21,10 +21,12 @@ Object group model and parser.
 
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, Union
+
 try:  # Python 3.11+
     from typing import Self  # type: ignore
 except Exception:  # Python < 3.11
     from typing_extensions import Self  # type: ignore
+
 from xml.etree import ElementTree
 
 from .element import TiledElement

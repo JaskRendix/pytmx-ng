@@ -22,10 +22,12 @@ Tiled tile layer model and parser.
 import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional
+
 try:  # Python 3.11+
     from typing import Self  # type: ignore
 except Exception:  # Python < 3.11
     from typing_extensions import Self  # type: ignore
+
 from xml.etree import ElementTree
 
 from .chunk import extract_chunks, stitch_chunks

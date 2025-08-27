@@ -225,6 +225,7 @@ def decode_chunk_data(
 def generate_rectangle_points(
     x: float, y: float, width: float, height: float
 ) -> tuple[Point, ...]:
+    """Generates corner points of a rectangle in clockwise order."""
     return (
         Point(x, y),
         Point(x + width, y),
@@ -234,13 +235,62 @@ def generate_rectangle_points(
 
 
 def generate_ellipse_points(
-    x: float, y: float, width: float, height: float, segments: int = 16
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    segments: int = 16,
+    rotation: float = 0.0,
 ) -> list[Point]:
+    """Generates evenly spaced points around an optionally rotated ellipse."""
     cx = x + width / 2
     cy = y + height / 2
     rx = width / 2
     ry = height / 2
     return [
-        Point(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
+        Point(
+            cx
+            + rx * math.cos(theta) * math.cos(rotation)
+            - ry * math.sin(theta) * math.sin(rotation),
+            cy
+            + rx * math.cos(theta) * math.sin(rotation)
+            + ry * math.sin(theta) * math.cos(rotation),
+        )
         for theta in [2 * math.pi * i / segments for i in range(segments)]
     ]
+
+
+def point_in_polygon(point: Point, polygon: list[Point]) -> bool:
+    """Determines if a point is inside a polygon using ray casting."""
+    x, y = point.x, point.y
+    inside = False
+    n = len(polygon)
+
+    for i in range(n):
+        j = (i - 1) % n
+        xi, yi = polygon[i].x, polygon[i].y
+        xj, yj = polygon[j].x, polygon[j].y
+
+        intersect = ((yi > y) != (yj > y)) and (
+            x < (xj - xi) * (y - yi) / (yj - yi + 1e-10) + xi
+        )
+        if intersect:
+            inside = not inside
+
+    return inside
+
+
+def is_convex(polygon: list[Point]) -> bool:
+    """Checks if a polygon is convex."""
+
+    def cross(p1: Point, p2: Point, p3: Point) -> float:
+        return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
+
+    signs = []
+    for i in range(len(polygon)):
+        p1 = polygon[i]
+        p2 = polygon[(i + 1) % len(polygon)]
+        p3 = polygon[(i + 2) % len(polygon)]
+        signs.append(cross(p1, p2, p3) > 0)
+
+    return all(signs) or not any(signs)

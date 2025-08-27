@@ -4,6 +4,7 @@ from xml.etree.ElementTree import Element
 
 from pytmx.constants import Point
 from pytmx.object import TiledObject
+from pytmx.utils import generate_rectangle_points
 
 
 class TestTiledObject(unittest.TestCase):
@@ -21,6 +22,31 @@ class TestTiledObject(unittest.TestCase):
             for child in children:
                 node.append(child)
         return node
+
+    def create_rectangle_object(self, x=0, y=0, width=10, height=20):
+        attrib = {
+            "x": str(x),
+            "y": str(y),
+            "width": str(width),
+            "height": str(height),
+        }
+        node = self.create_node(attrib=attrib)
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+        obj.object_type = "rectangle"
+        obj.points = generate_rectangle_points(x, y, width, height)
+        return obj
+
+    def create_ellipse_object(self, x=0, y=0, width=10, height=20):
+        attrib = {
+            "x": str(x),
+            "y": str(y),
+            "width": str(width),
+            "height": str(height),
+        }
+        node = self.create_node(attrib=attrib)
+        obj = TiledObject(self.mock_parent, node, self.custom_types)
+        obj.object_type = "ellipse"
+        return obj
 
     def test_rectangle_object(self):
         node = self.create_node(
@@ -331,3 +357,60 @@ class TestTiledObject(unittest.TestCase):
         self.assertEqual(center, Point(60, 45))
         self.assertEqual(rx, 50)
         self.assertEqual(ry, 25)
+
+    def test_as_points(self):
+        obj = self.create_rectangle_object(0, 0, 10, 20)
+        points = obj.as_points
+        expected = [Point(0, 0), Point(0, 20), Point(10, 20), Point(10, 0)]
+        self.assertEqual(points, expected)
+
+    def test_as_ellipse(self):
+        obj = self.create_ellipse_object(0, 0, 10, 20)
+        center, rx, ry = obj.as_ellipse
+        self.assertAlmostEqual(center.x, 5)
+        self.assertAlmostEqual(center.y, 10)
+        self.assertAlmostEqual(rx, 5)
+        self.assertAlmostEqual(ry, 10)
+
+    def test_get_bounding_box(self):
+        obj = self.create_rectangle_object(0, 0, 10, 20)
+        bbox = obj.get_bounding_box()
+        self.assertEqual(bbox, (0, 0, 10, 20))
+
+    def test_collides_with_point_inside(self):
+        obj = self.create_rectangle_object(0, 0, 10, 10)
+        self.assertTrue(obj.collides_with_point(5, 5))
+
+    def test_collides_with_point_outside(self):
+        obj = self.create_rectangle_object(0, 0, 10, 10)
+        self.assertFalse(obj.collides_with_point(15, 5))
+
+    def test_intersects_with_rect_true(self):
+        obj = self.create_rectangle_object(0, 0, 10, 10)
+        other_rect = (5, 5, 15, 15)
+        self.assertTrue(obj.intersects_with_rect(other_rect))
+
+    def test_intersects_with_rect_false(self):
+        obj = self.create_rectangle_object(0, 0, 10, 10)
+        other_rect = (20, 20, 30, 30)
+        self.assertFalse(obj.intersects_with_rect(other_rect))
+
+    def test_intersects_with_object_true(self):
+        obj1 = self.create_rectangle_object(0, 0, 10, 10)
+        obj2 = self.create_rectangle_object(5, 5, 10, 10)
+        self.assertTrue(obj1.intersects_with_object(obj2))
+
+    def test_intersects_with_object_false(self):
+        obj1 = self.create_rectangle_object(0, 0, 10, 10)
+        obj2 = self.create_rectangle_object(20, 20, 10, 10)
+        self.assertFalse(obj1.intersects_with_object(obj2))
+
+    def test_intersects_with_polygon_true(self):
+        obj1 = self.create_rectangle_object(0, 0, 10, 10)
+        obj2 = self.create_rectangle_object(5, 5, 10, 10)
+        self.assertTrue(obj1.intersects_with_polygon(obj2))
+
+    def test_intersects_with_polygon_false(self):
+        obj1 = self.create_rectangle_object(0, 0, 10, 10)
+        obj2 = self.create_rectangle_object(20, 20, 10, 10)
+        self.assertFalse(obj1.intersects_with_polygon(obj2))
