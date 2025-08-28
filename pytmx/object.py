@@ -32,7 +32,13 @@ from .constants import Point
 from .element import TiledElement
 from .shape import parse_shape_data
 from .template import apply_template_to_object
-from .utils import generate_rectangle_points, is_convex, point_in_polygon, rotate
+from .utils import (
+    compute_adjusted_position,
+    generate_rectangle_points,
+    is_convex,
+    point_in_polygon,
+    rotate,
+)
 
 if TYPE_CHECKING:
     from .map import TiledMap
@@ -235,3 +241,27 @@ class TiledObject(TiledElement):
                 return False  # Found a separating axis
 
         return True  # No separating axis found
+
+    def adjust_gid_object_position(
+        self,
+        orientation: str,
+        rotation: int,
+        tilewidth: int,
+        tileheight: int,
+        invert_y: bool,
+    ) -> None:
+        """
+        Adjust the position of a GID-based object based on map orientation and rotation.
+        Modifies the object in-place.
+        """
+        self.x, self.y = compute_adjusted_position(
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            orientation,
+            rotation,
+            tilewidth,
+            tileheight,
+            invert_y,
+        )

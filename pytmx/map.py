@@ -53,7 +53,12 @@ from .object import TiledObject
 from .object_group import TiledObjectGroup
 from .tile_layer import TiledTileLayer
 from .tileset import TiledTileset
-from .utils import decode_gid, default_image_loader, get_rotation_from_flags
+from .utils import (
+    decode_gid,
+    default_image_loader,
+    get_rotation_from_flags,
+    pixels_to_tile_pos,
+)
 
 logger = getLogger(__name__)
 
@@ -249,17 +254,13 @@ class TiledMap(TiledElement):
                 for key in p:
                     o.properties.setdefault(key, p[key])
 
-            # Adjust based on rotation
-            if rotation == 90:
-                o.x, o.y = o.x + o.height, o.y
-            elif rotation == 180:
-                o.x, o.y = o.x + o.width, o.y + o.height
-            elif rotation == 270:
-                o.x, o.y = o.x, o.y + o.width
-
-            # Adjust Y-coordinate if invert_y is enabled
-            if self.invert_y:
-                o.y -= o.height
+            o.adjust_gid_object_position(
+                orientation=self.orientation,
+                rotation=rotation,
+                tilewidth=self.tilewidth,
+                tileheight=self.tileheight,
+                invert_y=bool(self.invert_y),
+            )
 
         self.reload_images()
         return self
@@ -722,15 +723,15 @@ class TiledMap(TiledElement):
         return empty_flags  # default fallback
 
     def pixels_to_tile_pos(self, position: tuple[int, int]) -> tuple[int, int]:
-        """Convert pixel position to tile position.
-
-        Args:
-            position (tuple[int, int]): The pixel position.
-
-        Returns:
-            tuple[int, int]: The tile position.
-        """
-        return int(position[0] / self.tilewidth), int(position[1] / self.tileheight)
+        """Convert pixel position to tile position based on map orientation."""
+        return pixels_to_tile_pos(
+            position,
+            orientation=self.orientation,
+            tilewidth=self.tilewidth,
+            tileheight=self.tileheight,
+            staggeraxis=self.staggeraxis,
+            staggerindex=self.staggerindex,
+        )
 
     def _load_template(self, relative_path: str) -> TiledObject:
         """Loads a TiledObject template from a relative file path and caches it."""
