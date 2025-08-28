@@ -89,10 +89,7 @@ def extract_chunks(
             logger.warning(
                 f"[Chunk {i}] GID count mismatch: expected {width * height}, got {len(gids)}"
             )
-        if len(gids) != width * height:
-            logger.warning(
-                f"[Chunk {i}] GID count mismatch: expected {width * height}, got {len(gids)}"
-            )
+
         grid = [gids[row * width : (row + 1) * width] for row in range(height)]
 
         logger.debug(f"[Chunk {i}] Grid extracted with {len(grid)} rows")

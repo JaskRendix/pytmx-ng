@@ -294,3 +294,132 @@ def is_convex(polygon: list[Point]) -> bool:
         signs.append(cross(p1, p2, p3) > 0)
 
     return all(signs) or not any(signs)
+
+
+def pixels_to_tile_pos(
+    position: tuple[int, int],
+    orientation: str,
+    tilewidth: int,
+    tileheight: int,
+    staggeraxis: Optional[str] = None,
+    staggerindex: Optional[str] = None,
+) -> tuple[int, int]:
+    """Convert pixel position to tile position based on map orientation."""
+    x, y = position
+
+    if orientation == "orthogonal":
+        return math.floor(x / tilewidth), math.floor(y / tileheight)
+
+    elif orientation == "isometric":
+        tile_x = (x / tilewidth + y / tileheight) / 2
+        tile_y = (y / tileheight - x / tilewidth) / 2
+        return math.floor(tile_x), math.floor(tile_y)
+
+    elif orientation == "staggered":
+        if staggeraxis == "y":
+            row = math.floor(y / (tileheight / 2))
+            offset = (
+                tilewidth / 2
+                if (
+                    (staggerindex == "odd" and row % 2 == 1)
+                    or (staggerindex == "even" and row % 2 == 0)
+                )
+                else 0
+            )
+            col = math.floor((x - offset) / tilewidth)
+            return col, row
+        else:  # staggeraxis == "x"
+            col = math.floor(x / (tilewidth / 2))
+            offset = (
+                tileheight / 2
+                if (
+                    (staggerindex == "odd" and col % 2 == 1)
+                    or (staggerindex == "even" and col % 2 == 0)
+                )
+                else 0
+            )
+            row = math.floor((y - offset) / tileheight)
+            return col, row
+
+    elif orientation == "hexagonal":
+        if staggeraxis == "y":
+            row = math.floor(y / (tileheight * 0.75))
+            offset = (
+                tilewidth / 2
+                if (
+                    (staggerindex == "odd" and row % 2 == 1)
+                    or (staggerindex == "even" and row % 2 == 0)
+                )
+                else 0
+            )
+            col = math.floor((x - offset) / tilewidth)
+            return col, row
+        else:  # staggeraxis == "x"
+            col = math.floor(x / (tilewidth * 0.75))
+            offset = (
+                tileheight / 2
+                if (
+                    (staggerindex == "odd" and col % 2 == 1)
+                    or (staggerindex == "even" and col % 2 == 0)
+                )
+                else 0
+            )
+            row = math.floor((y - offset) / tileheight)
+            return col, row
+
+    return math.floor(x / tilewidth), math.floor(y / tileheight)
+
+
+def compute_adjusted_position(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    orientation: str,
+    rotation: int,
+    tilewidth: int,
+    tileheight: int,
+    invert_y: bool,
+) -> tuple[int, int]:
+    """
+    Compute the adjusted position based on map orientation and rotation.
+    Returns the new (x, y) coordinates.
+    """
+    new_x, new_y = x, y
+
+    if orientation == "orthogonal":
+        if rotation == 90:
+            new_x += height
+        elif rotation == 180:
+            new_x += width
+            new_y += height
+        elif rotation == 270:
+            new_y += width
+
+        if invert_y:
+            new_y -= height
+
+    elif orientation == "isometric":
+        new_x -= tilewidth // 2
+        new_y -= tileheight // 2
+
+        if rotation in (90, 270):
+            new_x += height // 2
+            new_y += height // 2
+
+        if invert_y:
+            new_y -= height
+
+    elif orientation in ("staggered", "hexagonal"):
+        if rotation == 90:
+            new_x += height
+        elif rotation == 180:
+            new_x += width
+            new_y += height
+        elif rotation == 270:
+            new_y += width
+
+        if invert_y:
+            new_y -= height
+
+    return new_x, new_y

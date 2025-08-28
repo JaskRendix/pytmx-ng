@@ -3,10 +3,12 @@ import unittest
 
 from pytmx.constants import Point
 from pytmx.utils import (
+    compute_adjusted_position,
     convert_to_bool,
     generate_ellipse_points,
     generate_rectangle_points,
     is_convex,
+    pixels_to_tile_pos,
     point_in_polygon,
     rotate,
 )
@@ -242,3 +244,115 @@ class TestRotateFunction(unittest.TestCase):
     def test_empty_input(self):
         rotated = rotate([], Point(0, 0), 45)
         self.assertEqual(rotated, [])
+
+
+class TestPixelsToTilePos(unittest.TestCase):
+
+    def test_orthogonal(self):
+        self.assertEqual(pixels_to_tile_pos((64, 96), "orthogonal", 32, 32), (2, 3))
+
+    def test_isometric(self):
+        self.assertEqual(pixels_to_tile_pos((64, 32), "isometric", 32, 32), (1, -1))
+        self.assertEqual(pixels_to_tile_pos((0, 0), "isometric", 32, 32), (0, 0))
+
+    def test_staggered_y_even(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (48, 32), "staggered", 32, 32, staggeraxis="y", staggerindex="even"
+            ),
+            (1, 2),
+        )
+
+    def test_staggered_y_odd(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (48, 32), "staggered", 32, 32, staggeraxis="y", staggerindex="odd"
+            ),
+            (1, 2),
+        )
+
+    def test_staggered_x_even(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (32, 48), "staggered", 32, 32, staggeraxis="x", staggerindex="even"
+            ),
+            (2, 1),
+        )
+
+    def test_staggered_x_odd(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (32, 48), "staggered", 32, 32, staggeraxis="x", staggerindex="odd"
+            ),
+            (2, 1),
+        )
+
+    def test_hexagonal_y(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (64, 64), "hexagonal", 32, 32, staggeraxis="y", staggerindex="odd"
+            ),
+            (2, 2),
+        )
+
+    def test_hexagonal_x(self):
+        self.assertEqual(
+            pixels_to_tile_pos(
+                (64, 64), "hexagonal", 32, 32, staggeraxis="x", staggerindex="odd"
+            ),
+            (2, 2),
+        )
+
+    def test_fallback(self):
+        self.assertEqual(pixels_to_tile_pos((64, 64), "unknown", 32, 32), (2, 2))
+
+
+class TestComputeAdjustedPosition(unittest.TestCase):
+
+    def test_orthogonal_no_rotation(self):
+        self.assertEqual(
+            compute_adjusted_position(10, 20, 30, 40, "orthogonal", 0, 64, 64, False),
+            (10, 20),
+        )
+
+    def test_orthogonal_90(self):
+        self.assertEqual(
+            compute_adjusted_position(0, 0, 10, 20, "orthogonal", 90, 64, 64, False),
+            (20, 0),
+        )
+
+    def test_orthogonal_180_invert(self):
+        self.assertEqual(
+            compute_adjusted_position(5, 5, 10, 20, "orthogonal", 180, 64, 64, True),
+            (15, 5),
+        )
+
+    def test_isometric_no_rotation(self):
+        self.assertEqual(
+            compute_adjusted_position(100, 100, 32, 32, "isometric", 0, 64, 64, False),
+            (68, 68),
+        )
+
+    def test_isometric_90_rotation_invert(self):
+        self.assertEqual(
+            compute_adjusted_position(100, 100, 32, 32, "isometric", 90, 64, 64, True),
+            (84, 52),
+        )
+
+    def test_staggered_270(self):
+        self.assertEqual(
+            compute_adjusted_position(0, 0, 10, 20, "staggered", 270, 64, 64, False),
+            (0, 10),
+        )
+
+    def test_hexagonal_180_invert(self):
+        self.assertEqual(
+            compute_adjusted_position(10, 10, 10, 20, "hexagonal", 180, 64, 64, True),
+            (20, 10),
+        )
+
+    def test_invalid_orientation(self):
+        # Should behave like no-op
+        self.assertEqual(
+            compute_adjusted_position(1, 2, 3, 4, "unknown", 0, 64, 64, False), (1, 2)
+        )
