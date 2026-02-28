@@ -26,15 +26,7 @@ All symbols here are intentionally dependency-free.
 
 from __future__ import annotations
 
-from typing import NamedTuple, Union
-
-try:
-    import pygame
-
-    HAS_PYGAME = True
-except ImportError:
-    HAS_PYGAME = False
-
+from typing import NamedTuple
 
 # --- Bit flags --------------------------------------------------------------
 # Internal transform flags used by pytmx
@@ -72,13 +64,7 @@ flag_cache: dict[int, TileFlags] = {}
 empty_flags = TileFlags(False, False, False)
 
 # --- Shared typing aliases (kept simple here to avoid imports) --------------
-ColorLike = Union[tuple[int, int, int, int], tuple[int, int, int], int, str]
+ColorLike = tuple[int, int, int, int] | tuple[int, int, int] | int | str
 MapPoint = tuple[int, int, int]
 # internal flags
 # error message format strings go here
-
-
-if HAS_PYGAME:
-    PointLike = Union[tuple[int, int], pygame.Vector2, Point]
-else:
-    PointLike = Union[tuple[int, int], Point]

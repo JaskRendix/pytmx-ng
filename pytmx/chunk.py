@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from logging import getLogger
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
 from .utils import decode_chunk_data
@@ -47,8 +47,8 @@ class Chunk:
 
 def extract_chunks(
     chunk_nodes: list[ElementTree.Element],
-    encoding: Optional[str],
-    compression: Optional[str],
+    encoding: str | None,
+    compression: str | None,
 ) -> list[Chunk]:
     """
     Extracts chunk data from a list of <chunk> XML nodes, using the specified encoding and compression.

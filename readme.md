@@ -31,7 +31,7 @@ A map loader for Python/pygame, designed for video games
 
 About
 ===============================================================================
-**For Python 3.9+**
+**For Python 3.10+**
 A map loader for python/pygame designed for games. It provides smart
 tile loading with a fast and efficient storage base. Not only does it
 correctly handle most Tiled object types, it also will load metadata for

@@ -19,7 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 from xml.etree import ElementTree
 
 from .constants import Point
@@ -40,7 +40,7 @@ class ShapeHandler(TypedDict, total=False):
 
 def parse_shape_data(
     obj: "TiledObject", node: ElementTree.Element
-) -> Optional[list[Point]]:
+) -> list[Point] | None:
     def read_points(text: str) -> list[tuple[float, float]]:
         return [
             (float(x), float(y))
@@ -71,7 +71,6 @@ def parse_shape_data(
             obj.object_type = handler["type"]
 
             if tag == "ellipse":
-
                 obj.points = tuple(
                     generate_ellipse_points(obj.x, obj.y, obj.width, obj.height)
                 )

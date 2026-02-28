@@ -19,7 +19,6 @@ import logging
 from pathlib import Path
 
 import pygame
-from pygame.locals import *
 
 from pytmx import __version__
 from pytmx.image_layer import TiledImageLayer
@@ -203,18 +202,18 @@ class SimpleTest:
         try:
             event = pygame.event.wait()
 
-            if event.type == QUIT:
+            if event.type == pygame.QUIT:
                 self.exit_status = 0
                 self.running = False
 
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     self.exit_status = 0
                     self.running = False
                 else:
                     self.running = False
 
-            elif event.type == VIDEORESIZE:
+            elif event.type == pygame.VIDEORESIZE:
                 init_screen(event.w, event.h)
                 self.dirty = True
 

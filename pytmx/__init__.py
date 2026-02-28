@@ -20,14 +20,7 @@ License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from .pytmx import *
-
 logger = logging.getLogger(__name__)
-
-try:
-    from pytmx.util_pygame import load_pygame
-except ImportError:
-    logger.debug("cannot import pygame tools")
 
 # Expose the installed package version. When running from a source checkout
 # without installed metadata, fall back to a sentinel string.

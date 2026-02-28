@@ -53,9 +53,7 @@ def apply_template_to_object(
     obj.gid = obj.parent.register_gid_check_flags(int(node.get("gid", 0)))
     obj.visible = node.get("visible", "1") == "1"
 
-    if node.find("polygon") is not None:
-        obj.object_type = "polygon"
-    elif template_obj.object_type == "polygon":
+    if node.find("polygon") is not None or template_obj.object_type == "polygon":
         obj.object_type = "polygon"
 
     # Parse shape from object node first
@@ -67,7 +65,7 @@ def apply_template_to_object(
 
     # Assign points and dimensions if shape was found
     if points:
-        xs, ys = zip(*[(p.x, p.y) for p in points])
+        xs, ys = zip(*[(p.x, p.y) for p in points], strict=False)
         obj.width = max(xs) - min(xs)
         obj.height = max(ys) - min(ys)
         obj.points = tuple(points)

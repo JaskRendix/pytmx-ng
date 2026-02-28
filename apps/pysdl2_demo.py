@@ -31,9 +31,8 @@ import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(__file__)
 
 import sdl2.ext
-from sdl2 import *
 
-from pytmx import *
+from pytmx.layer import TiledTileLayer
 from pytmx.util_pysdl2 import load_pysdl2
 
 
@@ -76,7 +75,6 @@ class TiledRenderer:
         Only tile layer drawing is implemented
         """
         for layer in self.tmx_data.visible_layers:
-
             # draw map tile layers
             if isinstance(layer, TiledTileLayer):
                 self.render_tile_layer(layer)

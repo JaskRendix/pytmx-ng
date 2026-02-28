@@ -1,6 +1,6 @@
-import unittest
-from unittest.mock import patch
 from xml.etree.ElementTree import Element
+
+import pytest
 
 from pytmx.element import TiledElement
 from pytmx.properties import parse_properties
@@ -25,169 +25,192 @@ class CustomClass(TiledElement):
         return self
 
 
-class TestTiledElement(unittest.TestCase):
+@pytest.fixture
+def element():
+    return DummyElement()
 
-    def setUp(self):
-        self.element = DummyElement()
 
-    def test_initial_state(self):
-        self.assertFalse(self.element._allow_duplicate_names)
-        self.assertEqual(self.element.properties, {})
+def test_initial_state(element):
+    assert element._allow_duplicate_names is False
+    assert element.properties == {}
 
-    def test_cast_and_set_attributes(self):
-        items = [("width", "32"), ("height", "64"), ("visible", "1")]
-        self.element._cast_and_set_attributes_from_node_items(items)
-        self.assertEqual(self.element.width, 32.0)
-        self.assertEqual(self.element.height, 64.0)
-        self.assertTrue(self.element.visible)
 
-    def test_invalid_property_name_detection(self):
-        self.element.name = "TestElement"
-        items = [("name", "conflict")]
-        self.assertTrue(self.element._contains_invalid_property_name(items))
+def test_cast_and_set_attributes(element):
+    items = [("width", "32"), ("height", "64"), ("visible", "1")]
+    element._cast_and_set_attributes_from_node_items(items)
+    assert element.width == 32.0
+    assert element.height == 64.0
+    assert element.visible is True
 
-    def test_valid_property_name_with_duplicates_allowed(self):
-        self.element.allow_duplicate_names = True
-        items = [("name", "conflict")]
-        self.assertFalse(self.element._contains_invalid_property_name(items))
 
-    def test_set_properties_with_valid_data(self):
-        xml = Element("element", attrib={"width": "128", "height": "256"})
-        props = Element("properties")
-        prop = Element("property", attrib={"name": "custom", "value": "hello"})
-        props.append(prop)
-        xml.append(props)
+def test_invalid_property_name_detection(element):
+    element.name = "TestElement"
+    items = [("name", "conflict")]
+    assert element._contains_invalid_property_name(items)
 
-        self.element._set_properties(xml)
-        self.assertEqual(self.element.width, 128.0)
-        self.assertEqual(self.element.height, 256.0)
-        self.assertEqual(self.element.properties["custom"], "hello")
 
-    def test_set_properties_with_conflict_raises(self):
-        xml = Element("element", attrib={"name": "conflict"})
-        props = Element("properties")
-        prop = Element("property", attrib={"name": "name", "value": "oops"})
-        props.append(prop)
-        xml.append(props)
+def test_valid_property_name_with_duplicates_allowed():
+    el = DummyElement(allow_duplicate_names=True)
+    items = [("name", "conflict")]
+    assert el._contains_invalid_property_name(items) is False
 
-        with self.assertRaises(ValueError):
-            self.element._set_properties(xml)
 
-    def test_getattr_existing_property(self):
-        self.element.properties["foo"] = "bar"
-        self.assertEqual(self.element.foo, "bar")
+def test_set_properties_with_valid_data(element):
+    xml = Element("element", attrib={"width": "128", "height": "256"})
+    props = Element("properties")
+    prop = Element("property", attrib={"name": "custom", "value": "hello"})
+    props.append(prop)
+    xml.append(props)
 
-    def test_getattr_missing_property_with_name(self):
-        self.element.properties["name"] = "TestElement"
-        with self.assertRaises(AttributeError) as cm:
-            _ = self.element.missing
-        self.assertIn("TestElement", str(cm.exception))
+    element._set_properties(xml)
+    assert element.width == 128.0
+    assert element.height == 256.0
+    assert element.properties["custom"] == "hello"
 
-    def test_getattr_missing_property_without_name(self):
-        with self.assertRaises(AttributeError) as cm:
-            _ = self.element.missing
-        self.assertIn("Element has no property", str(cm.exception))
 
-    def test_repr_with_id(self):
-        self.element.id = 42
-        self.element.name = "MyElement"
-        self.assertEqual(repr(self.element), '<DummyElement[42]: "MyElement">')
+def test_set_properties_with_conflict_raises(element):
+    xml = Element("element", attrib={"name": "conflict"})
+    props = Element("properties")
+    prop = Element("property", attrib={"name": "name", "value": "oops"})
+    props.append(prop)
+    xml.append(props)
 
-    def test_repr_without_id(self):
-        self.element.name = "MyElement"
-        self.assertEqual(repr(self.element), '<DummyElement: "MyElement">')
+    with pytest.raises(ValueError):
+        element._set_properties(xml)
 
-    def test_from_xml_string(self):
-        xml = """
-        <element width="100" height="200">
-            <properties>
-                <property name="custom" value="value" />
-            </properties>
-        </element>
-        """
-        obj = DummyElement.from_xml_string(xml)
-        self.assertEqual(obj.width, 100.0)
-        self.assertEqual(obj.height, 200.0)
-        self.assertEqual(obj.properties["custom"], "value")
 
-    def test_property_type_casting(self):
-        xml = Element("element")
-        props = Element("properties")
-        prop = Element(
-            "property", attrib={"name": "visible", "type": "bool", "value": "true"}
-        )
-        props.append(prop)
-        xml.append(props)
+def test_getattr_existing_property(element):
+    element.properties["foo"] = "bar"
+    assert element.foo == "bar"
 
-        props_dict = parse_properties(xml)
-        self.assertTrue(props_dict["visible"])
 
-    @patch("pytmx.properties.deepcopy", lambda x: x)
-    def test_nested_class_property(self):
-        customs = {"MyClass": CustomClass()}
-        xml = Element("element")
-        props = Element("properties")
-        class_prop = Element(
-            "property",
-            attrib={"name": "nested", "type": "class", "propertytype": "MyClass"},
-        )
-        subprop = Element("property", attrib={"name": "foo", "value": "bar"})
-        class_prop.append(subprop)
-        props.append(class_prop)
-        xml.append(props)
+def test_getattr_missing_property_with_name(element):
+    element.properties["name"] = "TestElement"
+    with pytest.raises(AttributeError) as exc:
+        _ = element.missing
+    assert "TestElement" in str(exc.value)
 
-        props_dict = parse_properties(xml, customs)
-        self.assertEqual(props_dict["nested"].foo, "bar")
 
-    def test_property_fallback_to_text(self):
-        xml = Element("element")
-        props = Element("properties")
-        prop = Element("property", attrib={"name": "fallback"})
-        prop.text = "fallback_value"
-        props.append(prop)
-        xml.append(props)
+def test_getattr_missing_property_without_name(element):
+    with pytest.raises(AttributeError) as exc:
+        _ = element.missing
+    assert "Element has no property" in str(exc.value)
 
-        props_dict = parse_properties(xml)
-        self.assertEqual(props_dict["fallback"], "fallback_value")
 
-    def test_property_type_not_found_logs_info(self):
-        xml = Element("element")
-        props = Element("properties")
-        prop = Element(
-            "property", attrib={"name": "unknown", "type": "mystery", "value": "42"}
-        )
-        props.append(prop)
-        xml.append(props)
+def test_repr_with_id(element):
+    element.id = 42
+    element.name = "MyElement"
+    assert repr(element) == '<DummyElement[42]: "MyElement">'
 
-        props_dict = parse_properties(xml)
-        self.assertEqual(props_dict["unknown"], "42")
 
-    def test_parse_xml_sets_properties(self):
-        xml = Element("element", attrib={"width": "100", "height": "200"})
-        props = Element("properties")
-        prop = Element("property", attrib={"name": "custom", "value": "hello"})
-        props.append(prop)
-        xml.append(props)
+def test_repr_without_id(element):
+    element.name = "MyElement"
+    assert repr(element) == '<DummyElement: "MyElement">'
 
-        result = self.element.parse_xml(xml)
-        self.assertEqual(result.width, 100.0)
-        self.assertEqual(result.height, 200.0)
-        self.assertEqual(result.properties["custom"], "hello")
 
-    def test_repr_output(self):
-        self.element.id = 1
-        self.element.name = "TestDummy"
-        self.assertEqual(repr(self.element), '<DummyElement[1]: "TestDummy">')
+def test_from_xml_string():
+    xml = """
+    <element width="100" height="200">
+        <properties>
+            <property name="custom" value="value" />
+        </properties>
+    </element>
+    """
+    obj = DummyElement.from_xml_string(xml)
+    assert obj.width == 100.0
+    assert obj.height == 200.0
+    assert obj.properties["custom"] == "value"
 
-    def test_property_access(self):
-        self.element.properties["foo"] = "bar"
-        self.assertEqual(self.element.foo, "bar")
 
-    def test_missing_property_raises(self):
-        with self.assertRaises(AttributeError):
-            _ = self.element.nonexistent
+def test_property_type_casting():
+    xml = Element("element")
+    props = Element("properties")
+    prop = Element(
+        "property", attrib={"name": "visible", "type": "bool", "value": "true"}
+    )
+    props.append(prop)
+    xml.append(props)
 
-    def test_contains_invalid_property_name(self):
-        self.element.name = "dummy"
-        items = [("name", "conflict")]
-        self.assertTrue(self.element._contains_invalid_property_name(items))
+    props_dict = parse_properties(xml)
+    assert props_dict["visible"] is True
+
+
+def test_nested_class_property(monkeypatch):
+    monkeypatch.setattr("pytmx.properties.deepcopy", lambda x: x)
+
+    customs = {"MyClass": CustomClass()}
+    xml = Element("element")
+    props = Element("properties")
+
+    class_prop = Element(
+        "property",
+        attrib={"name": "nested", "type": "class", "propertytype": "MyClass"},
+    )
+    subprop = Element("property", attrib={"name": "foo", "value": "bar"})
+    class_prop.append(subprop)
+
+    props.append(class_prop)
+    xml.append(props)
+
+    props_dict = parse_properties(xml, customs)
+    assert props_dict["nested"].foo == "bar"
+
+
+def test_property_fallback_to_text():
+    xml = Element("element")
+    props = Element("properties")
+    prop = Element("property", attrib={"name": "fallback"})
+    prop.text = "fallback_value"
+    props.append(prop)
+    xml.append(props)
+
+    props_dict = parse_properties(xml)
+    assert props_dict["fallback"] == "fallback_value"
+
+
+def test_property_type_not_found_logs_info():
+    xml = Element("element")
+    props = Element("properties")
+    prop = Element(
+        "property", attrib={"name": "unknown", "type": "mystery", "value": "42"}
+    )
+    props.append(prop)
+    xml.append(props)
+
+    props_dict = parse_properties(xml)
+    assert props_dict["unknown"] == "42"
+
+
+def test_parse_xml_sets_properties(element):
+    xml = Element("element", attrib={"width": "100", "height": "200"})
+    props = Element("properties")
+    prop = Element("property", attrib={"name": "custom", "value": "hello"})
+    props.append(prop)
+    xml.append(props)
+
+    result = element.parse_xml(xml)
+    assert result.width == 100.0
+    assert result.height == 200.0
+    assert result.properties["custom"] == "hello"
+
+
+def test_repr_output(element):
+    element.id = 1
+    element.name = "TestDummy"
+    assert repr(element) == '<DummyElement[1]: "TestDummy">'
+
+
+def test_property_access(element):
+    element.properties["foo"] = "bar"
+    assert element.foo == "bar"
+
+
+def test_missing_property_raises(element):
+    with pytest.raises(AttributeError):
+        _ = element.nonexistent
+
+
+def test_contains_invalid_property_name(element):
+    element.name = "dummy"
+    items = [("name", "conflict")]
+    assert element._contains_invalid_property_name(items)

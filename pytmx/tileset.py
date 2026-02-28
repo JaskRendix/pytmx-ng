@@ -21,19 +21,18 @@ Tiled Tileset parser and model.
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
+    from typing_extensions import Self
 
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
 from .constants import AnimationFrame
 from .element import TiledElement
-from .object_group import TiledObjectGroup
 from .properties import parse_properties, types
 
 if TYPE_CHECKING:
@@ -59,12 +58,12 @@ class TiledTileset(TiledElement):
         super().__init__()
         self.parent = parent
         self.offset: tuple[int, int] = (0, 0)
-        self.tileset_source: Optional[str] = None
+        self.tileset_source: str | None = None
 
         # defaults from the specification
         self.firstgid: int = 0
-        self.source: Optional[str] = None
-        self.name: Optional[str] = None
+        self.source: str | None = None
+        self.name: str | None = None
         self.tilewidth: int = 0
         self.tileheight: int = 0
         self.spacing: int = 0
@@ -73,7 +72,7 @@ class TiledTileset(TiledElement):
         self.columns: int = 0
 
         # image properties
-        self.trans: Optional[str] = None
+        self.trans: str | None = None
         self.width: int = 0
         self.height: int = 0
 
@@ -217,7 +216,7 @@ class TiledTileset(TiledElement):
 
             props["colliders"] = colliders
 
-            for gid, flags in self.parent.map_gid2(tiled_gid + self.firstgid):
+            for gid, _flags in self.parent.map_gid2(tiled_gid + self.firstgid):
                 self.parent.set_tile_properties(gid, props)
 
     def _parse_tileset_image_and_offset(self, node: ElementTree.Element) -> None:
