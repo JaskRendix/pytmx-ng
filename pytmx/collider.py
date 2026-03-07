@@ -19,10 +19,7 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
-
-from .constants import Point
-from .utils import rotate
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,7 @@ class Collider:
     height: float = 0.0
     type: str = "rectangle"  # rectangle, polygon, ellipse, point
     rotation: float = 0.0
-    points: Optional[list[tuple[float, float]]] = None
+    points: list[tuple[float, float]] | None = None
     properties: dict[str, Any] = field(default_factory=dict)
 
     def get_center(self) -> tuple[float, float]:

@@ -20,13 +20,12 @@ Object group model and parser.
 """
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
-
+    from typing_extensions import Self
 from xml.etree import ElementTree
 
 from .element import TiledElement
@@ -45,7 +44,7 @@ class TiledObjectGroup(TiledElement):
         self,
         parent: "TiledMap",
         node: ElementTree.Element,
-        custom_types: Optional[dict[str, Any]] = None,
+        custom_types: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.parent = parent
@@ -53,8 +52,8 @@ class TiledObjectGroup(TiledElement):
         self._objects: list[TiledObject] = []
 
         # defaults from the specification
-        self.name: Optional[str] = None
-        self.color: Optional[str] = None
+        self.name: str | None = None
+        self.color: str | None = None
         self.opacity: float = 1.0
         self.visible: bool = True
         self.offsetx: int = 0
@@ -88,9 +87,7 @@ class TiledObjectGroup(TiledElement):
         """Allows iteration (e.g., for obj in group:)."""
         return iter(self._objects)
 
-    def __getitem__(
-        self, index: Union[int, slice]
-    ) -> Union[TiledObject, list[TiledObject]]:
+    def __getitem__(self, index: int | slice) -> TiledObject | list[TiledObject]:
         """Allows indexing and slicing (e.g., group[0], group[2:5])."""
         return self._objects[index]
 
@@ -105,7 +102,7 @@ class TiledObjectGroup(TiledElement):
         """Remove all objects from the group."""
         self._objects.clear()
 
-    def find_by_name(self, name: str) -> Optional[TiledObject]:
+    def find_by_name(self, name: str) -> TiledObject | None:
         """Find the first object with a matching name."""
         for obj in self._objects:
             if getattr(obj, "name", None) == name:

@@ -19,12 +19,12 @@ License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 Tiled object model and parser.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
+    from typing_extensions import Self
 
 from xml.etree import ElementTree
 
@@ -63,8 +63,8 @@ class TiledObject(TiledElement):
 
         # defaults from the specification
         self.id: int = 0
-        self.name: Optional[str] = None
-        self.type: Optional[str] = None
+        self.name: str | None = None
+        self.type: str | None = None
         self.object_type: str = "rectangle"
         self.x: int = 0
         self.y: int = 0
@@ -74,11 +74,11 @@ class TiledObject(TiledElement):
         self.gid: int = 0
         self.visible: bool = True
         self.closed = True
-        self.template: Optional[str] = None
+        self.template: str | None = None
         self.custom_types = custom_types
 
         # Text
-        self.text: Optional[str] = None
+        self.text: str | None = None
         self.font_family: str = "Sans Serif"
         self.pixel_size: int = 16
         self.wrap: bool = False
@@ -123,7 +123,7 @@ class TiledObject(TiledElement):
         points = parse_shape_data(self, node)
 
         if points:
-            xs, ys = zip(*[(p.x, p.y) for p in points])
+            xs, ys = zip(*[(p.x, p.y) for p in points], strict=False)
             self.width = max(xs) - min(xs)
             self.height = max(ys) - min(ys)
             self.points = tuple(points)
@@ -155,11 +155,11 @@ class TiledObject(TiledElement):
         ]
 
     @property
-    def as_ellipse(self) -> Optional[tuple[Point, float, float]]:
+    def as_ellipse(self) -> tuple[Point, float, float] | None:
         """Return center and radii of the ellipse, if applicable.
 
         Returns:
-            Optional[tuple[Point, float, float]]: (center, radius_x, radius_y)
+            tuple[Point, float, float] | None: (center, radius_x, radius_y)
         """
         if self.object_type == "ellipse":
             center = Point(self.x + self.width / 2, self.y + self.height / 2)

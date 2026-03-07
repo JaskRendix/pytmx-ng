@@ -16,12 +16,10 @@ Missing interactive_tests:
 """
 
 import logging
-import os
 import time
 from pathlib import Path
 
 import pygame
-from pygame.locals import *
 
 from pytmx.image_layer import TiledImageLayer
 from pytmx.layer import TiledTileLayer
@@ -61,10 +59,9 @@ class TiledRenderer:
             layer_summary.append(type(layer).__name__)
         logger.info(f"Visible layers: {', '.join(layer_summary)}")
 
-        for layer_name in self.tmx_data.visible_tile_layers:
-            layer = self.tmx_data.layers[layer_name]
+        for layer in self.tmx_data.visible_tile_layers:
             tile_count = sum(1 for _ in layer.tiles())
-            logger.info(f"Layer '{layer_name}': {tile_count} tiles")
+            logger.info(f"Layer '{layer.name}': {tile_count} tiles")
 
     def render_map(self, surface: pygame.Surface) -> None:
         """Render our map to a pygame surface"""
@@ -138,12 +135,14 @@ class SimpleTest:
     def handle_input(self) -> None:
         try:
             event = pygame.event.wait()
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
                 self.exit_status = 0
                 self.running = False
-            elif event.type == KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 self.running = False
-            elif event.type == VIDEORESIZE:
+            elif event.type == pygame.VIDEORESIZE:
                 init_screen(event.w, event.h)
                 self.dirty = True
         except KeyboardInterrupt:
@@ -185,7 +184,7 @@ if __name__ == "__main__":
 
     try:
         start = time.time()
-        for i in range(3):
+        for _i in range(3):
             for filepath in map_files:
                 pygame.event.clear()
                 logger.info(f"Rendering map: {filepath.name}")
@@ -198,7 +197,7 @@ if __name__ == "__main__":
         logger.info(f"Completed rendering {total_maps} maps")
         logger.info(f"Total execution time: {time.time() - start:.2f} seconds")
 
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error:")
         pygame.quit()
         raise

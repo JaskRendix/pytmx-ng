@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2012-2025, Leif Theden <leif.theden@gmail.com>
 
@@ -17,9 +16,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import logging
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Optional
+from typing import Any
 
 from .constants import ColorLike, TileFlags
 from .map import TiledMap
@@ -41,9 +42,9 @@ __all__ = [
 def pysdl2_image_loader(
     renderer: sdl2.SDL_Renderer,
     filename: str,
-    colorkey: Optional[ColorLike] = None,
+    colorkey: ColorLike | None = None,
     **kwargs: Any,
-) -> Callable[[Optional[tuple[int, int, int, int]], Optional[TileFlags]], Any]:
+) -> Callable[[tuple[int, int, int, int] | None, TileFlags | None], Any]:
     def convert(surface: sdl2.SDL_Surface) -> sdl2.SDL_Texture:
         texture_ = sdl2.SDL_CreateTextureFromSurface(renderer.renderer, surface)
         sdl2.SDL_SetTextureBlendMode(texture_, sdl2.SDL_BLENDMODE_BLEND)
@@ -51,8 +52,8 @@ def pysdl2_image_loader(
         return texture_
 
     def load_image(
-        rect: Optional[tuple[int, int, int, int]] = None,
-        flags: Optional[TileFlags] = None,
+        rect: tuple[int, int, int, int] | None = None,
+        flags: TileFlags | None = None,
     ) -> Any:
         flip = 0
         if rect:

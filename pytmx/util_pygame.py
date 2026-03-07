@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2012-2025, Leif Theden <leif.theden@gmail.com>
 
@@ -17,12 +16,13 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import itertools
 import logging
 from collections.abc import Callable, Sequence
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
-from .constants import ColorLike, PointLike, TileFlags
+from .constants import ColorLike, TileFlags
 from .map import TiledMap
 from .tileset import TiledTileset
 
@@ -116,7 +116,7 @@ def log_surface_properties(surface: pygame.Surface, label: str = "Surface") -> N
 
 def smart_convert(
     original: pygame.Surface,
-    colorkey: Optional[ColorLike],
+    colorkey: ColorLike | None,
     pixelalpha: bool,
     preserve_alpha_flag: bool = False,
 ) -> pygame.Surface:
@@ -152,20 +152,22 @@ def smart_convert(
             tile = force_alpha() if pixelalpha else original.convert()
             tile.set_colorkey(colorkey)
     else:
-        if has_transparency(original):
-            tile = force_alpha()
-        elif preserve_alpha_flag and original.get_flags() & pygame.SRCALPHA:
+        if (
+            has_transparency(original)
+            or preserve_alpha_flag
+            and original.get_flags() & pygame.SRCALPHA
+        ):
             tile = force_alpha()
         else:
             tile = original.convert()
 
-    # Optional: log_surface_properties(tile, label="Converted Tile")
+    # log_surface_properties(tile, label="Converted Tile")
     return tile
 
 
 def pygame_image_loader(
-    filename: str, colorkey: Optional[ColorLike], **kwargs: Any
-) -> Callable[[Optional[pygame.Rect], Optional[TileFlags]], pygame.Surface]:
+    filename: str, colorkey: ColorLike | None, **kwargs: Any
+) -> Callable[[pygame.Rect | None, TileFlags | None], pygame.Surface]:
     """
     pytmx image loader for pygame
 
@@ -193,7 +195,7 @@ def pygame_image_loader(
     image = pygame.image.load(filename)
 
     def load_image(
-        rect: Optional[pygame.Rect] = None, flags: Optional[TileFlags] = None
+        rect: pygame.Rect | None = None, flags: TileFlags | None = None
     ) -> pygame.Surface:
         if rect:
             try:
@@ -245,9 +247,9 @@ def load_pygame(filename: str, *args: Any, **kwargs: Any) -> TiledMap:
 
 def build_rects(
     tmxmap: TiledMap,
-    layer: Union[int, str],
-    tileset: Optional[Union[int, str]],
-    real_gid: Optional[int],
+    layer: int | str,
+    tileset: int | str | None,
+    real_gid: int | None,
 ) -> list[pygame.Rect]:
     """
     Generate a set of non-overlapping rects that represents the distribution of the specified gid.
@@ -333,7 +335,7 @@ def build_rects(
 
 
 def simplify(
-    all_points: Sequence[PointLike],
+    all_points: Sequence[tuple[int, int]],
     tilewidth: int,
     tileheight: int,
 ) -> list[pygame.Rect]:
@@ -386,7 +388,7 @@ def simplify(
 
     rect_list: list[pygame.Rect] = []
 
-    def pick_rect(points: set[PointLike], rects: list[pygame.Rect]) -> None:
+    def pick_rect(points: set[tuple[int, int]], rects: list[pygame.Rect]) -> None:
         """
         Recursively pick a rect from the points and add it to the rects list.
         """

@@ -1,416 +1,408 @@
-import unittest
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 from xml.etree.ElementTree import Element
+
+import pytest
 
 from pytmx.constants import Point
 from pytmx.object import TiledObject
 from pytmx.utils import generate_rectangle_points
 
 
-class TestTiledObject(unittest.TestCase):
+@pytest.fixture
+def mock_parent():
+    parent = Mock()
+    parent.register_gid_check_flags = lambda gid: gid | 0x80000000
+    parent.images = {1 | 0x80000000: "mock_image"}
+    parent.templates = {}
+    parent.filename = "maps/map.tmx"
+    return parent
 
-    def setUp(self):
-        self.mock_parent = MagicMock()
-        self.mock_parent.register_gid_check_flags = lambda gid: gid | 0x80000000
-        # Add the transformed gid to the images dictionary
-        self.mock_parent.images = {1 | 0x80000000: "mock_image"}
-        self.custom_types = {}
 
-    def create_node(self, tag="object", attrib=None, children=None):
-        node = Element(tag, attrib=attrib or {})
-        if children:
-            for child in children:
-                node.append(child)
-        return node
+@pytest.fixture
+def custom_types():
+    return {}
 
-    def create_rectangle_object(self, x=0, y=0, width=10, height=20):
-        attrib = {
-            "x": str(x),
-            "y": str(y),
-            "width": str(width),
-            "height": str(height),
+
+def create_node(tag="object", attrib=None, children=None):
+    node = Element(tag, attrib=attrib or {})
+    if children:
+        for child in children:
+            node.append(child)
+    return node
+
+
+def create_rectangle_object(mock_parent, custom_types, x=0, y=0, width=10, height=20):
+    attrib = {"x": str(x), "y": str(y), "width": str(width), "height": str(height)}
+    node = create_node(attrib=attrib)
+    obj = TiledObject(mock_parent, node, custom_types)
+    obj.object_type = "rectangle"
+    obj.points = generate_rectangle_points(x, y, width, height)
+    return obj
+
+
+def create_ellipse_object(mock_parent, custom_types, x=0, y=0, width=10, height=20):
+    attrib = {"x": str(x), "y": str(y), "width": str(width), "height": str(height)}
+    node = create_node(attrib=attrib)
+    obj = TiledObject(mock_parent, node, custom_types)
+    obj.object_type = "ellipse"
+    return obj
+
+
+def test_rectangle_object(mock_parent, custom_types):
+    node = create_node(
+        attrib={"id": "1", "x": "10", "y": "20", "width": "30", "height": "40"}
+    )
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "rectangle"
+    assert obj.x == 10
+    assert obj.y == 20
+    assert obj.width == 30
+    assert obj.height == 40
+    assert len(obj.points) == 4
+
+
+def test_tile_object_with_gid(mock_parent, custom_types):
+    node = create_node(attrib={"gid": "1"})
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "tile"
+    assert obj.image == "mock_image"
+    assert obj.gid & 0x80000000
+
+
+def test_polygon_object(mock_parent, custom_types):
+    polygon = Element("polygon", {"points": "0,0 10,0 10,10"})
+    node = create_node(children=[polygon])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "polygon"
+    assert obj.closed
+    assert len(obj.points) == 3
+
+
+def test_polyline_object(mock_parent, custom_types):
+    polyline = Element("polyline", {"points": "0,0 10,0 10,10"})
+    node = create_node(children=[polyline])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "polyline"
+    assert not obj.closed
+    assert len(obj.points) == 3
+
+
+def test_ellipse_object(mock_parent, custom_types):
+    ellipse = Element("ellipse")
+    node = create_node(children=[ellipse])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "ellipse"
+
+
+def test_point_object(mock_parent, custom_types):
+    point = Element("point")
+    node = create_node(children=[point])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "point"
+
+
+def test_text_object_defaults(mock_parent, custom_types):
+    text = Element("text")
+    text.text = "Hello World"
+    node = create_node(children=[text])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "text"
+    assert obj.text == "Hello World"
+    assert obj.font_family == "Sans Serif"
+    assert obj.pixel_size == 16
+    assert not obj.wrap
+    assert not obj.bold
+    assert not obj.italic
+    assert not obj.underline
+    assert not obj.strike_out
+    assert obj.kerning
+    assert obj.h_align == "left"
+    assert obj.v_align == "top"
+    assert obj.color == "#000000FF"
+
+
+def test_apply_transformations_with_points(mock_parent, custom_types):
+    node = create_node(attrib={"x": "0", "y": "0", "width": "10", "height": "10"})
+    obj = TiledObject(mock_parent, node, custom_types)
+    obj.rotation = 45
+    transformed = obj.apply_transformations()
+
+    assert len(transformed) == 4
+    assert all(isinstance(p, tuple) and len(p) == 2 for p in transformed)
+
+
+def test_as_points_property(mock_parent, custom_types):
+    node = create_node(attrib={"x": "0", "y": "0", "width": "10", "height": "10"})
+    obj = TiledObject(mock_parent, node, custom_types)
+    points = obj.as_points
+
+    assert len(points) == 4
+    assert points[0] == Point(0, 0)
+    assert points[2] == Point(10, 10)
+
+
+def test_missing_gid_image(mock_parent, custom_types):
+    node = create_node()
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.image is None
+
+
+def test_no_text_node(mock_parent, custom_types):
+    node = create_node()
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "rectangle"
+    assert obj.text is None
+
+
+def test_malformed_points(mock_parent, custom_types):
+    polygon = Element("polygon", {"points": "0,0 10,a 20"})
+    node = create_node(children=[polygon])
+
+    with pytest.raises(ValueError):
+        TiledObject(mock_parent, node, custom_types)
+
+
+@pytest.mark.parametrize("angle", [0, 90, 180, 360])
+def test_rotation_angles(mock_parent, custom_types, angle):
+    node = create_node(attrib={"x": "0", "y": "0", "width": "10", "height": "10"})
+    obj = TiledObject(mock_parent, node, custom_types)
+    obj.rotation = angle
+    assert len(obj.apply_transformations()) == 4
+
+
+# Template tests -------------------------------------------------------------
+
+
+def test_template_basic_merge(mock_parent, custom_types):
+    template_node = create_node(
+        attrib={
+            "id": "99",
+            "x": "5",
+            "y": "5",
+            "width": "100",
+            "height": "200",
+            "rotation": "0",
+            "type": "template_type",
+            "name": "template_name",
         }
-        node = self.create_node(attrib=attrib)
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-        obj.object_type = "rectangle"
-        obj.points = generate_rectangle_points(x, y, width, height)
-        return obj
+    )
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.object_type = "rectangle"
+    template_obj.properties = {"speed": 10}
 
-    def create_ellipse_object(self, x=0, y=0, width=10, height=20):
-        attrib = {
-            "x": str(x),
-            "y": str(y),
-            "width": str(width),
-            "height": str(height),
+    mock_parent.templates = {"test_template.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    node = create_node(
+        attrib={
+            "template": "test_template.tx",
+            "id": "1",
+            "x": "10",
+            "y": "20",
+            "width": "30",
+            "height": "40",
+            "rotation": "45",
+            "type": "local_type",
+            "name": "local_name",
         }
-        node = self.create_node(attrib=attrib)
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-        obj.object_type = "ellipse"
-        return obj
-
-    def test_rectangle_object(self):
-        node = self.create_node(
-            attrib={"id": "1", "x": "10", "y": "20", "width": "30", "height": "40"}
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "rectangle")
-        self.assertEqual(obj.x, 10)
-        self.assertEqual(obj.y, 20)
-        self.assertEqual(obj.width, 30)
-        self.assertEqual(obj.height, 40)
-        self.assertEqual(len(obj.points), 4)
-
-    def test_tile_object_with_gid(self):
-        node = self.create_node(attrib={"gid": "1"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "tile")
-        self.assertEqual(obj.image, "mock_image")
-        self.assertTrue(obj.gid & 0x80000000)
-
-    def test_polygon_object(self):
-        polygon = Element("polygon", {"points": "0,0 10,0 10,10"})
-        node = self.create_node(children=[polygon])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "polygon")
-        self.assertTrue(obj.closed)
-        self.assertEqual(len(obj.points), 3)
-
-    def test_polyline_object(self):
-        polyline = Element("polyline", {"points": "0,0 10,0 10,10"})
-        node = self.create_node(children=[polyline])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "polyline")
-        self.assertFalse(obj.closed)
-        self.assertEqual(len(obj.points), 3)
-
-    def test_ellipse_object(self):
-        ellipse = Element("ellipse")
-        node = self.create_node(children=[ellipse])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "ellipse")
-
-    def test_point_object(self):
-        point = Element("point")
-        node = self.create_node(children=[point])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "point")
-
-    def test_text_object_defaults(self):
-        text = Element("text")
-        text.text = "Hello World"
-        node = self.create_node(children=[text])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "text")
-        self.assertEqual(obj.text, "Hello World")
-        self.assertEqual(obj.font_family, "Sans Serif")
-        self.assertEqual(obj.pixel_size, 16)
-        self.assertFalse(obj.wrap)
-        self.assertFalse(obj.bold)
-        self.assertFalse(obj.italic)
-        self.assertFalse(obj.underline)
-        self.assertFalse(obj.strike_out)
-        self.assertTrue(obj.kerning)
-        self.assertEqual(obj.h_align, "left")
-        self.assertEqual(obj.v_align, "top")
-        self.assertEqual(obj.color, "#000000FF")
-
-    def test_apply_transformations_with_points(self):
-        node = self.create_node(
-            attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-        obj.rotation = 45
-        transformed = obj.apply_transformations()
-
-        self.assertEqual(len(transformed), 4)
-        self.assertTrue(all(isinstance(p, tuple) and len(p) == 2 for p in transformed))
-
-    def test_as_points_property(self):
-        node = self.create_node(
-            attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-        points = obj.as_points
-
-        self.assertEqual(len(points), 4)
-        self.assertEqual(points[0], Point(0, 0))
-        self.assertEqual(points[2], Point(10, 10))
-
-    def test_missing_gid_image(self):
-        node = self.create_node()
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertIsNone(obj.image)
-
-    def test_no_text_node(self):
-        node = self.create_node()
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "rectangle")  # or whatever default
-        self.assertIsNone(obj.text)
-
-    def test_malformed_points(self):
-        polygon = Element("polygon", {"points": "0,0 10,a 20"})
-        node = self.create_node(children=[polygon])
-        with self.assertRaises(ValueError):
-            TiledObject(self.mock_parent, node, self.custom_types)
-
-    def test_rotation_angles(self):
-        node = self.create_node(
-            attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-        for angle in [0, 90, 180, 360]:
-            obj.rotation = angle
-            points = obj.apply_transformations()
-            self.assertEqual(len(points), 4)
-
-    def test_template_basic_merge(self):
-        template_node = self.create_node(
-            attrib={
-                "id": "99",
-                "x": "5",
-                "y": "5",
-                "width": "100",
-                "height": "200",
-                "rotation": "0",
-                "type": "template_type",
-                "name": "template_name",
-            }
-        )
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "rectangle"
-        template_obj.properties = {"speed": 10}
-
-        self.mock_parent.templates = {"test_template.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(
-            attrib={
-                "template": "test_template.tx",
-                "id": "1",
-                "x": "10",
-                "y": "20",
-                "width": "30",
-                "height": "40",
-                "rotation": "45",
-                "type": "local_type",
-                "name": "local_name",
-            }
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.id, 1)
-        self.assertEqual(obj.name, "local_name")
-        self.assertEqual(obj.type, "local_type")
-        self.assertEqual(obj.x, 10)
-        self.assertEqual(obj.y, 20)
-        self.assertEqual(obj.width, 30)
-        self.assertEqual(obj.height, 40)
-        self.assertEqual(obj.rotation, 45)
-        self.assertEqual(obj.object_type, "rectangle")
-        self.assertIn("speed", obj.properties)
-        self.assertEqual(obj.properties["speed"], 10)
-
-    def test_template_polygon_override(self):
-        template_node = self.create_node(
-            attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
-        )
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "rectangle"
-        template_obj.properties = {}
-
-        self.mock_parent.templates = {"test_template.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        polygon = Element("polygon", {"points": "0,0 10,0 10,10"})
-        node = self.create_node(
-            attrib={"template": "test_template.tx"}, children=[polygon]
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "polygon")
-        self.assertEqual(len(obj.points), 3)
-
-    def test_template_missing_file(self):
-        self.mock_parent._load_template = lambda path: None
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(attrib={"template": "missing.tx"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertIsInstance(obj, TiledObject)
-        self.assertEqual(obj.object_type, "rectangle")
-
-    def test_template_fallback_values(self):
-        template_node = self.create_node(
-            attrib={"x": "50", "y": "60", "width": "70", "height": "80"}
-        )
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "rectangle"
-
-        self.mock_parent.templates = {"fallback.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(attrib={"template": "fallback.tx"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.x, 50)
-        self.assertEqual(obj.y, 60)
-        self.assertEqual(obj.width, 70)
-        self.assertEqual(obj.height, 80)
-
-    def test_template_shape_override(self):
-        template_node = self.create_node()
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "ellipse"
-
-        self.mock_parent.templates = {"shape.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        polyline = Element("polyline", {"points": "0,0 10,10"})
-        node = self.create_node(attrib={"template": "shape.tx"}, children=[polyline])
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "polyline")
-        self.assertEqual(len(obj.points), 2)
-
-    def test_template_text_inheritance(self):
-        text = Element("text")
-        text.text = "Template Text"
-        text.set("fontfamily", "Courier")
-        text.set("pixelsize", "20")
-        template_node = self.create_node(children=[text])
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "text"
-
-        self.mock_parent.templates = {"text.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(attrib={"template": "text.tx"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "text")
-        self.assertEqual(obj.text, "Template Text")
-        self.assertEqual(obj.font_family, "Courier")
-        self.assertEqual(obj.pixel_size, 20)
-
-    def test_template_custom_properties(self):
-        template_node = self.create_node()
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.properties = {"health": 100, "speed": 5}
-
-        self.mock_parent.templates = {"props.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(attrib={"template": "props.tx"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.properties["health"], 100)
-        self.assertEqual(obj.properties["speed"], 5)
-
-    def test_template_text_shape_fallback(self):
-        text = Element("text")
-        text.text = "Template Text"
-        text.set("fontfamily", "Courier")
-        text.set("pixelsize", "20")
-
-        template_node = self.create_node(children=[text])
-        template_obj = TiledObject(self.mock_parent, template_node, self.custom_types)
-        template_obj.object_type = "text"
-        template_obj.node = template_node  # Required for fallback parsing
-
-        self.mock_parent.templates = {"text_template.tx": template_obj}
-        self.mock_parent._load_template = lambda path: self.mock_parent.templates[path]
-        self.mock_parent.filename = "maps/map.tmx"
-
-        node = self.create_node(attrib={"template": "text_template.tx"})
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        self.assertEqual(obj.object_type, "text")
-        self.assertEqual(obj.text, "Template Text")
-        self.assertEqual(obj.font_family, "Courier")
-        self.assertEqual(obj.pixel_size, 20)
-
-    def test_as_ellipse_property(self):
-        ellipse = Element("ellipse")
-        node = self.create_node(
-            attrib={"x": "10", "y": "20", "width": "100", "height": "50"},
-            children=[ellipse],
-        )
-        obj = TiledObject(self.mock_parent, node, self.custom_types)
-
-        center, rx, ry = obj.as_ellipse
-        self.assertEqual(center, Point(60, 45))
-        self.assertEqual(rx, 50)
-        self.assertEqual(ry, 25)
-
-    def test_as_points(self):
-        obj = self.create_rectangle_object(0, 0, 10, 20)
-        points = obj.as_points
-        expected = [Point(0, 0), Point(0, 20), Point(10, 20), Point(10, 0)]
-        self.assertEqual(points, expected)
-
-    def test_as_ellipse(self):
-        obj = self.create_ellipse_object(0, 0, 10, 20)
-        center, rx, ry = obj.as_ellipse
-        self.assertAlmostEqual(center.x, 5)
-        self.assertAlmostEqual(center.y, 10)
-        self.assertAlmostEqual(rx, 5)
-        self.assertAlmostEqual(ry, 10)
-
-    def test_get_bounding_box(self):
-        obj = self.create_rectangle_object(0, 0, 10, 20)
-        bbox = obj.get_bounding_box()
-        self.assertEqual(bbox, (0, 0, 10, 20))
-
-    def test_collides_with_point_inside(self):
-        obj = self.create_rectangle_object(0, 0, 10, 10)
-        self.assertTrue(obj.collides_with_point(5, 5))
-
-    def test_collides_with_point_outside(self):
-        obj = self.create_rectangle_object(0, 0, 10, 10)
-        self.assertFalse(obj.collides_with_point(15, 5))
-
-    def test_intersects_with_rect_true(self):
-        obj = self.create_rectangle_object(0, 0, 10, 10)
-        other_rect = (5, 5, 15, 15)
-        self.assertTrue(obj.intersects_with_rect(other_rect))
-
-    def test_intersects_with_rect_false(self):
-        obj = self.create_rectangle_object(0, 0, 10, 10)
-        other_rect = (20, 20, 30, 30)
-        self.assertFalse(obj.intersects_with_rect(other_rect))
-
-    def test_intersects_with_object_true(self):
-        obj1 = self.create_rectangle_object(0, 0, 10, 10)
-        obj2 = self.create_rectangle_object(5, 5, 10, 10)
-        self.assertTrue(obj1.intersects_with_object(obj2))
-
-    def test_intersects_with_object_false(self):
-        obj1 = self.create_rectangle_object(0, 0, 10, 10)
-        obj2 = self.create_rectangle_object(20, 20, 10, 10)
-        self.assertFalse(obj1.intersects_with_object(obj2))
-
-    def test_intersects_with_polygon_true(self):
-        obj1 = self.create_rectangle_object(0, 0, 10, 10)
-        obj2 = self.create_rectangle_object(5, 5, 10, 10)
-        self.assertTrue(obj1.intersects_with_polygon(obj2))
-
-    def test_intersects_with_polygon_false(self):
-        obj1 = self.create_rectangle_object(0, 0, 10, 10)
-        obj2 = self.create_rectangle_object(20, 20, 10, 10)
-        self.assertFalse(obj1.intersects_with_polygon(obj2))
+    )
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.id == 1
+    assert obj.name == "local_name"
+    assert obj.type == "local_type"
+    assert obj.x == 10
+    assert obj.y == 20
+    assert obj.width == 30
+    assert obj.height == 40
+    assert obj.rotation == 45
+    assert obj.object_type == "rectangle"
+    assert obj.properties["speed"] == 10
+
+
+def test_template_polygon_override(mock_parent, custom_types):
+    template_node = create_node(
+        attrib={"x": "0", "y": "0", "width": "10", "height": "10"}
+    )
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.object_type = "rectangle"
+
+    mock_parent.templates = {"test_template.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    polygon = Element("polygon", {"points": "0,0 10,0 10,10"})
+    node = create_node(attrib={"template": "test_template.tx"}, children=[polygon])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "polygon"
+    assert len(obj.points) == 3
+
+
+def test_template_missing_file(mock_parent, custom_types):
+    mock_parent._load_template = lambda path: None
+
+    node = create_node(attrib={"template": "missing.tx"})
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert isinstance(obj, TiledObject)
+    assert obj.object_type == "rectangle"
+
+
+def test_template_fallback_values(mock_parent, custom_types):
+    template_node = create_node(
+        attrib={"x": "50", "y": "60", "width": "70", "height": "80"}
+    )
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.object_type = "rectangle"
+
+    mock_parent.templates = {"fallback.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    node = create_node(attrib={"template": "fallback.tx"})
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.x == 50
+    assert obj.y == 60
+    assert obj.width == 70
+    assert obj.height == 80
+
+
+def test_template_shape_override(mock_parent, custom_types):
+    template_node = create_node()
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.object_type = "ellipse"
+
+    mock_parent.templates = {"shape.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    polyline = Element("polyline", {"points": "0,0 10,10"})
+    node = create_node(attrib={"template": "shape.tx"}, children=[polyline])
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "polyline"
+    assert len(obj.points) == 2
+
+
+def test_template_text_inheritance(mock_parent, custom_types):
+    text = Element("text")
+    text.text = "Template Text"
+    text.set("fontfamily", "Courier")
+    text.set("pixelsize", "20")
+
+    template_node = create_node(children=[text])
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.object_type = "text"
+
+    mock_parent.templates = {"text.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    node = create_node(attrib={"template": "text.tx"})
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.object_type == "text"
+    assert obj.text == "Template Text"
+    assert obj.font_family == "Courier"
+    assert obj.pixel_size == 20
+
+
+def test_template_custom_properties(mock_parent, custom_types):
+    template_node = create_node()
+    template_obj = TiledObject(mock_parent, template_node, custom_types)
+    template_obj.properties = {"health": 100, "speed": 5}
+
+    mock_parent.templates = {"props.tx": template_obj}
+    mock_parent._load_template = lambda path: mock_parent.templates[path]
+
+    node = create_node(attrib={"template": "props.tx"})
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    assert obj.properties["health"] == 100
+    assert obj.properties["speed"] == 5
+
+
+def test_as_ellipse_property(mock_parent, custom_types):
+    ellipse = Element("ellipse")
+    node = create_node(
+        attrib={"x": "10", "y": "20", "width": "100", "height": "50"},
+        children=[ellipse],
+    )
+    obj = TiledObject(mock_parent, node, custom_types)
+
+    center, rx, ry = obj.as_ellipse
+    assert center == Point(60, 45)
+    assert rx == 50
+    assert ry == 25
+
+
+def test_as_points(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 20)
+    expected = [Point(0, 0), Point(0, 20), Point(10, 20), Point(10, 0)]
+    assert obj.as_points == expected
+
+
+def test_as_ellipse(mock_parent, custom_types):
+    obj = create_ellipse_object(mock_parent, custom_types, 0, 0, 10, 20)
+    center, rx, ry = obj.as_ellipse
+
+    assert pytest.approx(center.x) == 5
+    assert pytest.approx(center.y) == 10
+    assert pytest.approx(rx) == 5
+    assert pytest.approx(ry) == 10
+
+
+def test_get_bounding_box(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 20)
+    assert obj.get_bounding_box() == (0, 0, 10, 20)
+
+
+def test_collides_with_point_inside(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    assert obj.collides_with_point(5, 5)
+
+
+def test_collides_with_point_outside(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    assert not obj.collides_with_point(15, 5)
+
+
+def test_intersects_with_rect_true(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    assert obj.intersects_with_rect((5, 5, 15, 15))
+
+
+def test_intersects_with_rect_false(mock_parent, custom_types):
+    obj = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    assert not obj.intersects_with_rect((20, 20, 30, 30))
+
+
+def test_intersects_with_object_true(mock_parent, custom_types):
+    obj1 = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    obj2 = create_rectangle_object(mock_parent, custom_types, 5, 5, 10, 10)
+    assert obj1.intersects_with_object(obj2)
+
+
+def test_intersects_with_object_false(mock_parent, custom_types):
+    obj1 = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    obj2 = create_rectangle_object(mock_parent, custom_types, 20, 20, 10, 10)
+    assert not obj1.intersects_with_object(obj2)
+
+
+def test_intersects_with_polygon_true(mock_parent, custom_types):
+    obj1 = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    obj2 = create_rectangle_object(mock_parent, custom_types, 5, 5, 10, 10)
+    assert obj1.intersects_with_polygon(obj2)
+
+
+def test_intersects_with_polygon_false(mock_parent, custom_types):
+    obj1 = create_rectangle_object(mock_parent, custom_types, 0, 0, 10, 10)
+    obj2 = create_rectangle_object(mock_parent, custom_types, 20, 20, 10, 10)
+    assert not obj1.intersects_with_polygon(obj2)

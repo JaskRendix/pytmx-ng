@@ -21,11 +21,11 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Optional
+from typing import Any
 
 from pygame.rect import Rect
 
-from .constants import ColorLike, PointLike, TileFlags
+from .constants import ColorLike, TileFlags
 from .map import TiledMap
 
 logger = logging.getLogger(__name__)
@@ -42,14 +42,14 @@ except ImportError:
 class PygameSDL2Tile:
     texture: Texture
     srcrect: Rect
-    size: PointLike
+    size: tuple[int, int]
     angle: float = 0.0
-    center: Optional[PointLike] = None
+    center: tuple[int, int] | None = None
     flipx: bool = False
     flipy: bool = False
 
 
-def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
+def handle_flags(flags: TileFlags | None) -> tuple[float, bool, bool]:
     """
     Return angle and flip values for the SDL2 renderer
     """
@@ -68,11 +68,9 @@ def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
 def pygame_sd2_image_loader(
     renderer: Renderer,
     filename: str,
-    colorkey: Optional[ColorLike] = None,
+    colorkey: ColorLike | None = None,
     **kwargs: Any,
-) -> Callable[
-    [Optional[Rect], Optional[TileFlags], Optional[PointLike]], PygameSDL2Tile
-]:
+) -> Callable[[Rect | None, TileFlags | None, tuple[int, int] | None], PygameSDL2Tile]:
     """
     pytmx image loader for pygame
     """
@@ -94,9 +92,9 @@ def pygame_sd2_image_loader(
     texture: Texture = Texture.from_surface(renderer, image)
 
     def load_image(
-        rect: Optional[Rect] = None,
-        flags: Optional[TileFlags] = None,
-        center: Optional[PointLike] = None,
+        rect: Rect | None = None,
+        flags: TileFlags | None = None,
+        center: tuple[int, int] | None = None,
     ) -> PygameSDL2Tile:
         if rect:
             assert parent_rect.contains(rect), "Tile rect must be within image bounds"

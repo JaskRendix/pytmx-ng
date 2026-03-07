@@ -4,7 +4,7 @@ from pathlib import Path
 from pytmx.map import TiledMap
 from pytmx.utils import decode_gid
 
-# Optional: enable tracking cache hits
+# enable tracking cache hits
 flag_cache_stats = {"hits": 0, "misses": 0}
 flag_cache = {}
 

@@ -27,8 +27,9 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, Callable, Optional
+from typing import Any
 from xml.etree import ElementTree
 
 from .utils import convert_to_bool
@@ -36,13 +37,13 @@ from .utils import convert_to_bool
 logger = logging.getLogger(__name__)
 
 
-def wrap_type(fn: Callable[[Any], Any]) -> Callable[[Optional[str]], Any]:
+def wrap_type(fn: Callable[[Any], Any]) -> Callable[[str | None], Any]:
     return lambda x: fn(x) if x is not None else fn("")
 
 
 # used to change the unicode string returned from xml to
 # proper python variable types.
-CastFunc = Callable[[Optional[str]], Any]
+CastFunc = Callable[[str | None], Any]
 
 raw_types: dict[str, Callable[[Any], Any]] = {
     "backgroundcolor": str,
@@ -100,7 +101,7 @@ raw_types: dict[str, Callable[[Any], Any]] = {
     "y": float,
 }
 
-types: defaultdict[str, Callable[[Optional[str]], Any]] = defaultdict(lambda: str)
+types: defaultdict[str, Callable[[str | None], Any]] = defaultdict(lambda: str)
 types.update({k: wrap_type(v) for k, v in raw_types.items()})
 
 
@@ -112,7 +113,7 @@ def resolve_to_class(value: str, custom_types: dict[str, Any]) -> Any:
 
 
 # casting for properties type
-prop_type: dict[str, Callable[[Optional[str]], Any]] = {
+prop_type: dict[str, Callable[[str | None], Any]] = {
     "bool": wrap_type(convert_to_bool),
     "color": wrap_type(str),
     "file": wrap_type(str),
@@ -126,7 +127,7 @@ prop_type: dict[str, Callable[[Optional[str]], Any]] = {
 
 
 def parse_properties(
-    node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+    node: ElementTree.Element, customs: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """Parse a Tiled XML node and return a property dict.
 

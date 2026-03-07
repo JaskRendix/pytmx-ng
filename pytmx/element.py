@@ -22,7 +22,7 @@ Base element types shared by pytmx models.
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Any, Optional, Type
+from typing import Any
 from xml.etree import ElementTree
 
 from .properties import parse_properties, types
@@ -32,11 +32,11 @@ logger = getLogger(__name__)
 
 # NOTE:
 # Use a compatibility import for Self: available in typing on 3.11+, and in
-# typing_extensions for Python 3.9/3.10.
+# typing_extensions for Python 3.10.
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
+    from typing_extensions import Self
 
 
 class TiledElement(ABC):
@@ -114,7 +114,7 @@ class TiledElement(ABC):
         return False
 
     def _set_properties(
-        self, node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+        self, node: ElementTree.Element, customs: dict[str, Any] | None = None
     ) -> None:
         """Set properties from xml data
 

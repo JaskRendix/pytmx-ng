@@ -21,12 +21,12 @@ Tiled tile layer model and parser.
 
 import logging
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
+    from typing_extensions import Self
 
 from xml.etree import ElementTree
 
@@ -54,7 +54,7 @@ class TiledTileLayer(TiledElement):
         self.chunks: list[Chunk] = []
 
         # defaults from the specification
-        self.name: Optional[str] = None
+        self.name: str | None = None
         self.width: int = 0
         self.height: int = 0
         self.opacity: float = 1.0
@@ -88,7 +88,7 @@ class TiledTileLayer(TiledElement):
             yield x, y, images[gid]
 
     def _set_properties(
-        self, node: ElementTree.Element, customs: Optional[dict[str, Any]] = None
+        self, node: ElementTree.Element, customs: dict[str, Any] | None = None
     ) -> None:
         super()._set_properties(node, customs)
 

@@ -20,12 +20,11 @@ logger.setLevel(logging.INFO)
 
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Optional
 
 import pyglet
 from pyglet.sprite import Sprite
 
-from pytmx.constants import ColorLike, PointLike
+from pytmx.constants import ColorLike, Point
 from pytmx.image_layer import TiledImageLayer
 from pytmx.object_group import TiledObjectGroup
 from pytmx.tile_layer import TiledTileLayer
@@ -86,7 +85,7 @@ class TiledRenderer:
             )  # right
 
     def draw_lines(
-        self, color: ColorLike, closed: bool, points: list[PointLike], width: int
+        self, color: ColorLike, closed: bool, points: list[Point], width: int
     ) -> None:
         # Flip Y-axis if necessary
         flipped_points = [(x, self.size[1] - y) for x, y in points]
@@ -97,8 +96,10 @@ class TiledRenderer:
             )
             polygon.opacity = 128
         else:
-            for (x1, y1), (x2, y2) in zip(flipped_points, flipped_points[1:]):
-                line = pyglet.shapes.Line(
+            for (x1, y1), (x2, y2) in zip(
+                flipped_points, flipped_points[1:], strict=False
+            ):
+                pyglet.shapes.Line(
                     x1, y1, x2, y2, thickness=width, color=color, batch=self.batch
                 )
 
@@ -147,12 +148,11 @@ class TiledRenderer:
                         draw_rect(rect_color, (obj.x, obj.y, obj.width, obj.height), 3)
 
             # draw image layers
-            elif isinstance(layer, TiledImageLayer):
-                if layer.image:
-                    x = mw // 2  # centers image
-                    y = mh // 2
-                    sprite = Sprite(layer.image, x, y, batch=self.batch)
-                    self.sprites.append(sprite)
+            elif isinstance(layer, TiledImageLayer) and layer.image:
+                x = mw // 2  # centers image
+                y = mh // 2
+                sprite = Sprite(layer.image, x, y, batch=self.batch)
+                self.sprites.append(sprite)
 
     def draw(self) -> None:
         self.batch.draw()
@@ -197,7 +197,7 @@ class TestWindow(pyglet.window.Window):
             self, color=(50, 255, 50, 255)
         )
         self.filenames: Iterator[str] = all_filenames()
-        self.contents: Optional[SimpleTest] = None
+        self.contents: SimpleTest | None = None
         self.next_map()
 
     def on_draw(self) -> None:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2012-2025, Leif Theden <leif.theden@gmail.com>
 
@@ -17,14 +16,16 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
-    import pyglet  # type: ignore
+    import pyglet
 except ImportError:
     logger.error("cannot import pyglet (is it installed?)")
     raise
@@ -34,8 +35,8 @@ from .map import TiledMap
 
 
 def pyglet_image_loader(
-    filename: str, colorkey: Optional[ColorLike] = None, **kwargs: Any
-) -> Callable[[Optional[tuple[int, int, int, int]], Optional[TileFlags]], Any]:
+    filename: str, colorkey: ColorLike | None = None, **kwargs: Any
+) -> Callable[[tuple[int, int, int, int] | None, TileFlags | None], Any]:
     """basic image loading with pyglet
 
     returns pyglet Images, not textures
@@ -58,8 +59,8 @@ def pyglet_image_loader(
     image = pyglet.resource.image(image_path.name)
 
     def load_image(
-        rect: Optional[tuple[int, int, int, int]] = None,
-        flags: Optional[TileFlags] = None,
+        rect: tuple[int, int, int, int] | None = None,
+        flags: TileFlags | None = None,
     ) -> Any:
         try:
             if rect:
@@ -83,7 +84,7 @@ def pyglet_image_loader(
     return load_image
 
 
-def handle_flags(flags: Optional[TileFlags]) -> tuple[float, bool, bool]:
+def handle_flags(flags: TileFlags | None) -> tuple[float, bool, bool]:
     """
     Convert Tiled tile flip flags into SDL2 rendering parameters.
     """

@@ -1,5 +1,5 @@
 """
-This is tested on pygame 2.0.1 and python 3.9.6.
+This is tested on pygame 2.0.1 and python 3.10.
 Leif Theden "bitcraft", 2012-2025
 
 Rendering demo for the TMXLoader.
@@ -9,11 +9,9 @@ Rendering demo for the TMXLoader.
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import pygame
 from pygame._sdl2 import Renderer, Window
-from pygame.locals import *
 
 from pytmx import __version__
 from pytmx.layer import TiledTileLayer
@@ -81,7 +79,7 @@ class SimpleTest:
 
     def __init__(self, ctx: GameContext, filename: Path) -> None:
         self.ctx = ctx
-        self.map_renderer: Optional[TiledRenderer] = None
+        self.map_renderer: TiledRenderer | None = None
         self.running: bool = False
         self.exit_status: int = 0
         self.load_map(filename)
@@ -135,12 +133,12 @@ class SimpleTest:
         try:
             event = pygame.event.wait()
 
-            if event.type == QUIT:
+            if event.type == pygame.QUIT:
                 self.exit_status = 0
                 self.running = False
 
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     self.exit_status = 0
                     self.running = False
                 else:

@@ -32,7 +32,7 @@ from base64 import b64decode
 from collections.abc import Callable, Sequence
 from logging import getLogger
 from math import cos, radians, sin
-from typing import Any, Optional, Union
+from typing import Any
 
 logger = getLogger(__name__)
 
@@ -109,8 +109,8 @@ def reshape_data(gids: list[int], width: int) -> list[list[int]]:
 
 def unpack_gids(
     text: str,
-    encoding: Optional[str] = None,
-    compression: Optional[str] = None,
+    encoding: str | None = None,
+    compression: str | None = None,
 ) -> list[int]:
     """Return all GIDs from encoded/compressed layer data."""
     if encoding == "base64":
@@ -126,7 +126,7 @@ def unpack_gids(
                 raise ValueError("zstd compression is not installed.")
         elif compression:
             raise ValueError(f"layer compression {compression} is not supported.")
-        fmt = "<%dL" % (len(data) // 4)
+        fmt = f"<{len(data) // 4}L"
         return list(struct.unpack(fmt, data))
     elif encoding == "csv":
         if not text.strip():
@@ -140,7 +140,7 @@ def unpack_gids(
         return []
 
 
-def convert_to_bool(value: Optional[Union[str, int, float]] = None) -> bool:
+def convert_to_bool(value: str | int | float | None = None) -> bool:
     """Convert common text/number variants to a boolean value.
 
     Recognizes: 1, y, t, true, yes as True
@@ -161,7 +161,7 @@ def convert_to_bool(value: Optional[Union[str, int, float]] = None) -> bool:
 def rotate(
     points: Sequence[Point],
     origin: Point,
-    angle: Union[int, float],
+    angle: int | float,
 ) -> list[Point]:
     """Rotate a sequence of points around an origin by angle degrees."""
     sin_t = sin(radians(angle))
@@ -175,7 +175,7 @@ def rotate(
 
 
 def decode_chunk_data(
-    text: str, encoding: Optional[str], compression: Optional[str]
+    text: str, encoding: str | None, compression: str | None
 ) -> tuple[list[int], bytes]:
     """
     Decode and decompress chunk data from a Tiled map.
@@ -205,7 +205,7 @@ def decode_chunk_data(
         elif compression:
             raise ValueError(f"Unsupported compression: {compression}")
 
-        fmt = "<%dL" % (len(raw_data) // 4)
+        fmt = f"<{len(raw_data) // 4}L"
         gids = list(struct.unpack(fmt, raw_data))
 
     elif encoding == "csv":
@@ -301,8 +301,8 @@ def pixels_to_tile_pos(
     orientation: str,
     tilewidth: int,
     tileheight: int,
-    staggeraxis: Optional[str] = None,
-    staggerindex: Optional[str] = None,
+    staggeraxis: str | None = None,
+    staggerindex: str | None = None,
 ) -> tuple[int, int]:
     """Convert pixel position to tile position based on map orientation."""
     x, y = position

@@ -17,12 +17,12 @@ You should have received a copy of the GNU Lesser General Public
 License along with pytmx.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 try:  # Python 3.11+
-    from typing import Self  # type: ignore
+    from typing import Self
 except Exception:  # Python < 3.11
-    from typing_extensions import Self  # type: ignore
+    from typing_extensions import Self
 
 from xml.etree import ElementTree
 
@@ -41,12 +41,12 @@ class TiledImageLayer(TiledElement):
     def __init__(self, parent: "TiledMap", node: ElementTree.Element) -> None:
         super().__init__()
         self.parent = parent
-        self.source: Optional[str] = None
-        self.trans: Optional[str] = None
+        self.source: str | None = None
+        self.trans: str | None = None
         self.gid: int = 0
 
         # defaults from the specification
-        self.name: Optional[str] = None
+        self.name: str | None = None
         self.opacity: float = 1.0
         self.visible: bool = True
 
