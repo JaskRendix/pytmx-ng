@@ -148,6 +148,7 @@ class TiledMap(TiledElement):
         self.staggeraxis = None
         self.staggerindex = None
         self.background_color: str | None = None
+        self.nextlayerid: int = 0
         self.nextobjectid: int = 0
 
         self.custom_types: dict[str, TiledClassType] = {}

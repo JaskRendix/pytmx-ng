@@ -66,6 +66,7 @@ raw_types: dict[str, Callable[[Any], Any]] = {
     "kerning": convert_to_bool,
     "margin": int,
     "name": str,
+    "nextlayerid": int,
     "nextobjectid": int,
     "offsetx": int,
     "offsety": int,
@@ -119,6 +120,7 @@ prop_type: dict[str, Callable[[str | None], Any]] = {
     "file": wrap_type(str),
     "float": wrap_type(float),
     "int": wrap_type(int),
+    "list": lambda v: v,  # Will be handled specially in parse_properties
     "object": wrap_type(int),
     "string": wrap_type(str),
     "class": lambda v: resolve_to_class(v or "", {}),
@@ -134,7 +136,23 @@ def parse_properties(
     This parses `<properties>` children and casts their values according to
     `prop_type`. If a property is of type `class`, it instantiates a new
     object (via `resolve_to_class`) and recursively assigns nested members.
+    If a property is of type `list`, it parses the nested `<item>` elements.
     """
+    def parse_list_items(list_node: ElementTree.Element) -> list[Any]:
+        """Recursively parse list items from a list property node."""
+        items = []
+        for item_node in list_node.findall("item"):
+            item_type = item_node.get("type")
+            item_value = item_node.get("value") or item_node.text
+            
+            if item_type == "list":
+                # Handle nested lists recursively
+                items.append(parse_list_items(item_node))
+            else:
+                caster = prop_type.get(item_type or "", str)
+                items.append(caster(item_value))
+        return items
+
     result: dict[str, Any] = {}
     for child in node.findall("properties"):
         for subnode in child.findall("property"):
@@ -154,6 +172,9 @@ def parse_properties(
                 for key, val in nested_props.items():
                     setattr(new_obj, key, val)
                 result[name] = new_obj
+            elif type_str == "list":
+                # Parse list items with support for arbitrary nesting
+                result[name] = parse_list_items(subnode)
             else:
                 caster = prop_type.get(type_str or "", str)
                 result[name] = caster(value)
