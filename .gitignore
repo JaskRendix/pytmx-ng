@@ -6,3 +6,7 @@ __pycache__/
 venv/
 dist/
 pytmx_ng.egg-info/
+
+# Tiled project files
+*.tiled-project
+*.tiled-session
