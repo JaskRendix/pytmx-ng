@@ -28,3 +28,42 @@ try:
     __version__ = version("pytmx-ng")
 except PackageNotFoundError:
     __version__ = "0+unknown"
+
+# Import main classes from pytmx module
+from .pytmx import (
+    TiledClassType,
+    TiledElement,
+    TiledGroupLayer,
+    TiledImageLayer,
+    TiledMap,
+    TiledObject,
+    TiledObjectGroup,
+    TiledProperty,
+    TiledTileLayer,
+    TiledTileset,
+    TileFlags,
+    convert_to_bool,
+    decode_gid,
+    parse_properties,
+    resolve_to_class,
+    unpack_gids,
+)
+
+__all__ = [
+    "TiledMap",
+    "TiledElement",
+    "TiledGroupLayer",
+    "TiledImageLayer",
+    "TiledObject",
+    "TiledObjectGroup",
+    "TiledTileLayer",
+    "TiledProperty",
+    "TiledClassType",
+    "TiledTileset",
+    "TileFlags",
+    "convert_to_bool",
+    "resolve_to_class",
+    "parse_properties",
+    "decode_gid",
+    "unpack_gids",
+]
