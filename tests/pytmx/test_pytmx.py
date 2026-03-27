@@ -82,51 +82,51 @@ def test_pixels_to_tile_pos(tiled_map):
 
 def test_nextlayerid_default_value(tiled_map):
     """Test nextlayerid defaults to 0 when not present in TMX file."""
-    assert hasattr(tiled_map, 'nextlayerid')
+    assert hasattr(tiled_map, "nextlayerid")
     assert tiled_map.nextlayerid == 0
 
 
 def test_nextlayerid_from_file(tiled_map_v2):
     """Test nextlayerid is correctly parsed from TMX file."""
-    assert hasattr(tiled_map_v2, 'nextlayerid')
+    assert hasattr(tiled_map_v2, "nextlayerid")
     assert tiled_map_v2.nextlayerid == 6
 
 
 def test_nextobjectid_from_file(tiled_map):
     """Test nextobjectid is correctly parsed from TMX file."""
-    assert hasattr(tiled_map, 'nextobjectid')
+    assert hasattr(tiled_map, "nextobjectid")
     assert tiled_map.nextobjectid == 9
 
 
 def test_nextobjectid_from_file_v2(tiled_map_v2):
     """Test nextobjectid is correctly parsed from TMX file."""
-    assert hasattr(tiled_map_v2, 'nextobjectid')
+    assert hasattr(tiled_map_v2, "nextobjectid")
     assert tiled_map_v2.nextobjectid == 9
 
 
 def test_list_properties_v2(tiled_map_v2):
     """Test list properties are correctly parsed from TMX file."""
     props = tiled_map_v2.properties
-    assert 'test_list' in props
-    test_list = props['test_list']
-    
+    assert "test_list" in props
+    test_list = props["test_list"]
+
     assert isinstance(test_list, list)
     assert len(test_list) == 9
-    
+
     # Test specific items from test02.tmx
     assert test_list[0] == "#ff00ff00"  # color
-    assert test_list[1] == 3.14         # float
+    assert test_list[1] == 3.14  # float
     assert test_list[2] == "TestFile.txt"  # file
-    assert test_list[3] == 4            # int
-    assert test_list[4] == 1            # object
+    assert test_list[3] == 4  # int
+    assert test_list[4] == 1  # object
     assert test_list[5] == "Test String"  # string
     assert test_list[6] == [False, True]  # nested list
-    assert test_list[7] is False         # bool
-    assert test_list[8] is True          # bool
+    assert test_list[7] is False  # bool
+    assert test_list[8] is True  # bool
 
 
 def test_object_properties_v2(tiled_map_v2):
     """Test object properties are correctly parsed from TMX file."""
     props = tiled_map_v2.properties
-    assert 'test_object' in props
-    assert props['test_object'] == 6
+    assert "test_object" in props
+    assert props["test_object"] == 6

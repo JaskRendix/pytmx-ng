@@ -138,13 +138,14 @@ def parse_properties(
     object (via `resolve_to_class`) and recursively assigns nested members.
     If a property is of type `list`, it parses the nested `<item>` elements.
     """
+
     def parse_list_items(list_node: ElementTree.Element) -> list[Any]:
         """Recursively parse list items from a list property node."""
         items = []
         for item_node in list_node.findall("item"):
             item_type = item_node.get("type")
             item_value = item_node.get("value") or item_node.text
-            
+
             if item_type == "list":
                 # Handle nested lists recursively
                 items.append(parse_list_items(item_node))

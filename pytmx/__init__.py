@@ -31,21 +31,21 @@ except PackageNotFoundError:
 
 # Import main classes from pytmx module
 from .pytmx import (
-    TiledMap,
+    TiledClassType,
     TiledElement,
     TiledGroupLayer,
     TiledImageLayer,
+    TiledMap,
     TiledObject,
     TiledObjectGroup,
-    TiledTileLayer,
     TiledProperty,
-    TiledClassType,
+    TiledTileLayer,
     TiledTileset,
     TileFlags,
     convert_to_bool,
-    resolve_to_class,
-    parse_properties,
     decode_gid,
+    parse_properties,
+    resolve_to_class,
     unpack_gids,
 )
 
